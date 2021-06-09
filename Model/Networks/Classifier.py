@@ -3,7 +3,7 @@ from API import Snippet, Preprocessing
 import numpy as np
 
 
-class Predictor(Base):
+class Classifier(Base):
     def __init__(self, size_subsequent: int, dataset: str, fraction: float, load=None) -> None:
         super().__init__(size_subsequent, dataset, load)
         self.snippet_list = Preprocessing.search_snippet(data=dataset,
@@ -13,6 +13,9 @@ class Predictor(Base):
 
     def __load_model(self, dir_: str):
         print("Загрузка сверточной сети из файла")
+
+    def create_predictor_dataset(self) -> str:
+        return "Путь к датасету для прогноза"
 
     def predictor(self, data: np.ndarray) -> np.ndarray:
         return np.array([])

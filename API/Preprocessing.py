@@ -19,7 +19,7 @@ def normalize(subsequent: np.ndarray) -> np.ndarray:
     return np.array([])
 
 
-def augmentation(data: pd.DataFrame, e: float):
+def augmentation(data: pd.DataFrame, e = 0.01):
     subseq_count = [(i, len(np.array(data.neighbors.iloc[i]))) for i in range(0, len(data.neighbors))]
     max_subseq_count = max([subseq_count[i][1] for i in range(0, len(subseq_count))])
 

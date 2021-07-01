@@ -1,0 +1,40 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.log
+db.sqlite3*
+vault.key
+ansible.cfg
+client/build/
+../server_chtpz/Include/
+Lib/
+Scripts/
+share/
+client/build
+client/dist
+to.spec
+test*
+pyvenv.cfg
+
+*.zip
+*.exe
+*client.spec
+
+# Environments
+*.env
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+log/
+# IDEA
+.idea
+.vscode
+*.xls
+# UML diagrams
+UML/
+

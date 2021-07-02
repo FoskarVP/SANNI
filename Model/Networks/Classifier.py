@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from keras.layers import Conv2D, Activation
 import tensorflow as tf
 from keras.models import Model, Input, load_model
-from keras.layers import  Dropout, Dense, GlobalAveragePooling2D, AveragePooling2D
+from keras.layers import Dropout, Dense, GlobalAveragePooling2D, AveragePooling2D
 
 
 class Classifier(BaseModel):
@@ -24,13 +24,14 @@ class Classifier(BaseModel):
         self.bath_size = 25
         self.pool = 2
         self.layers = [[128, 5], [128, 5], [64, 5]]
-        self.epochs = 60
+        self.epochs = 40
         self.optimizer = "adam"
         self.loss = "categorical_crossentropy"
         self.metrics = [tf.keras.metrics.Precision()]
         self.dataset = DataSet(dataset, self.bath_size, name="Classifier")
 
-        self.snippet_list = pd.read_csv(self.dir_dataset + "/snippet.csv", names=["snippet"]).snippet.values
+        self.snippet_list = pd.read_csv(self.dir_dataset + "/snippet.csv",
+                                        converters={"snippet": json.loads}).snippet.values
         self.model = self.__init_networks()
 
         print("Инициализации сверточной сети")

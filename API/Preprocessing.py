@@ -113,6 +113,8 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float):
     snippet_save = snippet_list.copy()
     print("Найденно снипеттов: ", snippet_list.shape[0])
     snippet_save.neighbors = snippet_save.neighbors.apply(lambda x: json.dumps(x))
+    snippet_save.snippet = snippet_save.snippet.apply(lambda x: json.dumps(x.tolist()))
+
     snippet_save.to_csv(dataset + "/snippet.csv", )
     del snippet_save
     X_classifier = []
@@ -145,9 +147,11 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float):
     result = {
         "size_subsequent": size_subsequent,
         "classifier": False,
-        "predictor": False,
+        "predict": False,
+        "clear": False,
         "fraction": fraction
     }
+
     with open(dataset + '\current_params.json', 'w') as outfile:
         json.dump(result, outfile)
     print("Создал датасет")

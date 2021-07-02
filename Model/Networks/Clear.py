@@ -67,9 +67,6 @@ class Clear(BaseModel):
         self.model = load_model(self.dir_dataset + "/networks/clear.h5")
         print("Загрузка предсказателя сети из файла")
 
-    def predictor(self, data: np.ndarray) -> np.ndarray:
-        return np.array([])
-
     def save_model(self) -> None:
 
         if not os.path.exists(self.dir_dataset + "/networks"):
@@ -83,9 +80,6 @@ class Clear(BaseModel):
         with open(self.dir_dataset + '/current_params.json', 'w') as outfile:
             json.dump(current, outfile)
         print("Сохранил модель")
-
-    def get_snippet(self, class_snip: int) -> np.ndarray:
-        return np.array([])
 
     def test(self):
         y_predict = self.predict(self.dataset.X_test)

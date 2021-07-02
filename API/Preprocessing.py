@@ -49,40 +49,40 @@ def normalize(sequent: np.ndarray) -> np.ndarray:
     return x_scaled
 
 
-    def augmentation(data: pd.DataFrame, e=0.01):
-        """
-        Увеличение и балансировка соседей.
-        Все соседи сниппетов увеличиваются до количеста соседей у сниппета с максиальным fraction
-        :param data: dataframe, в котором хранятся сниппеты и их соседи
-        :param e: 0<e<1 процент, на который можно сдвинуть точку
-        :return: возвращается dataframe той же структуры, но со сбалансированными соседями
-        """
-        subseq_count = [(i, len(np.array(data.neighbors.iloc[i]))) for i in range(0, len(data.neighbors))]
-        max_subseq_count = max([subseq_count[i][1] for i in range(0, len(subseq_count))])
+def augmentation(data: pd.DataFrame, e=0.01):
+    """
+    Увеличение и балансировка соседей.
+    Все соседи сниппетов увеличиваются до количеста соседей у сниппета с максиальным fraction
+    :param data: dataframe, в котором хранятся сниппеты и их соседи
+    :param e: 0<e<1 процент, на который можно сдвинуть точку
+    :return: возвращается dataframe той же структуры, но со сбалансированными соседями
+    """
+    subseq_count = [(i, len(np.array(data.neighbors.iloc[i]))) for i in range(0, len(data.neighbors))]
+    max_subseq_count = max([subseq_count[i][1] for i in range(0, len(subseq_count))])
 
-        new_neighbors_all = []
-        for cl in range(0, len(data.neighbors)):
-            if subseq_count[cl][1] == max_subseq_count:
-                new_neighbors_all.append(data.neighbors[cl].copy())
-                continue
-            neighbors = data.neighbors[cl].copy()
-            need_new_neighbors = (max_subseq_count - subseq_count[cl][1])
-            need_double_new = need_new_neighbors - subseq_count[cl][1] if need_new_neighbors - subseq_count[cl][
-                1] > 0 else 0
-            need_new_neighbors -= need_double_new
-            for i in range(0, need_new_neighbors):
+    new_neighbors_all = []
+    for cl in range(0, len(data.neighbors)):
+        if subseq_count[cl][1] == max_subseq_count:
+            new_neighbors_all.append(data.neighbors[cl].copy())
+            continue
+        neighbors = data.neighbors[cl].copy()
+        need_new_neighbors = (max_subseq_count - subseq_count[cl][1])
+        need_double_new = need_new_neighbors - subseq_count[cl][1] if need_new_neighbors - subseq_count[cl][
+            1] > 0 else 0
+        need_new_neighbors -= need_double_new
+        for i in range(0, need_new_neighbors):
+            new_neighbor = neighbors[i]
+            new_neighbor[random.randint(0, len(neighbors[i]) - 1)] *= 1 + random.uniform(-e, e)
+            neighbors.append(new_neighbor)
+            if need_double_new > 0:
                 new_neighbor = neighbors[i]
                 new_neighbor[random.randint(0, len(neighbors[i]) - 1)] *= 1 + random.uniform(-e, e)
                 neighbors.append(new_neighbor)
-                if need_double_new > 0:
-                    new_neighbor = neighbors[i]
-                    new_neighbor[random.randint(0, len(neighbors[i]) - 1)] *= 1 + random.uniform(-e, e)
-                    neighbors.append(new_neighbor)
-                    need_double_new -= 1
-            new_neighbors_all.append(neighbors)
+                need_double_new -= 1
+        new_neighbors_all.append(neighbors)
 
-        data['neighbors'] = new_neighbors_all
-        return data
+    data['neighbors'] = new_neighbors_all
+    return data
 
 
 def create_dataset(size_subsequent: int, dataset: str, fraction: float):

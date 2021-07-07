@@ -51,8 +51,7 @@ class Center:
 
         for j, i in enumerate(data):
             bar.next()
-            image = subsequent_to_image(i)
-            y_classifier = self.classifier.predict(np.array([image]))[0]
+            y_classifier = self.classifier.predict(np.array([i]))[0]
             classifier.append(y_classifier)
             y_classifier = self.classifier.get_snippet(y_classifier)
             X_predict = np.stack([np.append(i, [0]), y_classifier])
@@ -99,35 +98,33 @@ class Center:
 
     def general_test(self):
         print("Запуск генерального тестирования")
-        shape = self.predictor.dataset.X_test.shape
-        X_test = np.append(self.clear.dataset.X_test,
-                           self.predictor.dataset.X_test[:, 0, :-1].
-                           reshape(shape[0], shape[2] - 1)).reshape(-1, shape[2] - 1)
-        y_test = np.append(self.clear.dataset.y_test, self.predictor.dataset.y_test)
 
-        y_predict_clear = self.clear.predict(X_test)
+        y_predict_clear = self.clear.predict(self.clear.dataset.X_test)
         print("mse предсказателя без сниппета - {0};".
-              format(metrics.mean_squared_error(y_true=y_test,
+              format(metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
                                                 y_pred=y_predict_clear)))
         print("rmse предсказателя без сниппета- {0};".
-              format(metrics.mean_squared_error(y_true=y_test,
+              format(metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
                                                 y_pred=y_predict_clear) * 0.5))
 
-        y_predict, y_classifier = self.predict(X_test)
+        y_predict, y_classifier = self.predict(self.clear.dataset.X_test)
 
         print("mse предсказателя со сниппетом - {0};".
-              format(metrics.mean_squared_error(y_true=y_test,
+              format(metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
                                                 y_pred=y_predict)))
         print("rmse предсказателя со сниппетом- {0};".
-              format(metrics.mean_squared_error(y_true=y_test,
+              format(metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
                                                 y_pred=y_predict) * 0.5))
 
         result = {
-            "mse_sn": metrics.mean_squared_error(y_true=y_test, y_pred=y_predict),
-            "rmse_sn": metrics.mean_squared_error(y_true=y_test, y_pred=y_predict) * 0.5,
-            "mse": metrics.mean_squared_error(y_true=y_test,
-                                                y_pred=y_predict_clear),
-            "rmse": metrics.mean_squared_error(y_true=y_test,y_pred=y_predict_clear) * 0.5
+            "mse_sn": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
+                                                 y_pred=y_predict),
+            "rmse_sn": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
+                                                  y_pred=y_predict) * 0.5,
+            "mse": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
+                                              y_pred=y_predict_clear),
+            "rmse": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
+                                               y_pred=y_predict_clear) * 0.5
         }
         with open(self.params.dir_dataset + "/result/general_result.txt", 'w') as outfile:
             json.dump(result, outfile)

@@ -7,7 +7,7 @@ import json
 
 class DataSet:
 
-    def __init__(self, dir_=None, bath_size=None, name=None, percent=None) -> None:
+    def __init__(self, dir_=None, bath_size=None, name=None, percent=None, shuffle=True) -> None:
         """
         Инициализация датасета
         :param dir_: Директория датасета
@@ -25,14 +25,22 @@ class DataSet:
 
             X = np.stack(df.X.values)
             y = np.stack(df.y.values)
-            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,
-                                                                                    y,
-                                                                                    test_size=percent,
-                                                                                    random_state=42)
-            self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train,
-                                                                                      self.y_train,
-                                                                                      test_size=0.33,
-                                                                                      random_state=42)
+            if shuffle:
+                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,
+                                                                                        y,
+                                                                                        test_size=percent,
+                                                                                        random_state=42)
+                self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train,
+                                                                                          self.y_train,
+                                                                                          test_size=0.33,
+                                                                                          random_state=42)
+            else:
+                self.X_train = X[:int(X.shape[0] * 0.6)]
+                self.X_valid = X[int(X.shape[0] * 0.6):int(X.shape[0] * 0.75)]
+                self.X_test = X[int(X.shape[0] * 0.75):]
+                self.y_train = y[:int(X.shape[0] * 0.6)]
+                self.y_valid = y[int(X.shape[0] * 0.6):int(X.shape[0] * 0.75)]
+                self.y_test = y[int(X.shape[0] * 0.75):]
             self.n = len(self.X_train)
             self.cur_index = 0
             self.count_ep = 0

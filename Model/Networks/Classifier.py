@@ -9,10 +9,10 @@ from sklearn import metrics
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from keras.layers import Conv2D, Activation
+from keras.layers import Conv2D, Conv1D, Activation
 import tensorflow as tf
 from keras.models import Model, Input, load_model
-from keras.layers import Dropout, Dense, GlobalAveragePooling2D, AveragePooling2D
+from keras.layers import Dropout, Dense, GlobalAveragePooling2D, AveragePooling2D, AveragePooling1D, GlobalAvgPool1D
 
 
 class Classifier(BaseModel):
@@ -28,7 +28,7 @@ class Classifier(BaseModel):
         self.optimizer = "adam"
         self.loss = "categorical_crossentropy"
         self.metrics = [tf.keras.metrics.Precision()]
-        self.dataset = DataSet(dataset, self.bath_size, name="Classifier")
+        self.dataset = DataSet(dataset, self.bath_size, name="Classifier", shuffle=False)
 
         self.snippet_list = pd.read_csv(self.dir_dataset + "/snippet.csv",
                                         converters={"snippet": json.loads}).snippet.values
@@ -37,18 +37,17 @@ class Classifier(BaseModel):
         print("Инициализации сверточной сети")
 
     def __init_networks(self):
-        input_layer = Input((self.dataset.X_test.shape[1],
-                             self.dataset.X_test.shape[1], 1),
+        input_layer = Input((self.dataset.X_test.shape[1], 1),
                             name="img_input",
                             dtype='float32')
         output = input_layer
         for i in self.layers[:-1]:
-            output = Conv2D(i[0], (i[1], i[1]), kernel_initializer='he_normal', activation='relu')(output)
-            output = AveragePooling2D(pool_size=(2, 2))(output)
+            output = Conv1D(i[0], i[1], kernel_initializer='he_normal', activation='relu')(output)
+            output = AveragePooling1D(pool_size=2)(output)
 
-        output = Conv2D(self.layers[-1][0], (self.layers[-1][1], self.layers[-1][1]),
+        output = Conv1D(self.layers[-1][0], self.layers[-1][1],
                         kernel_initializer='he_normal', activation='relu')(output)
-        output = GlobalAveragePooling2D()(output)
+        output = GlobalAvgPool1D()(output)
         output = Dropout(0.25)(output)
         output = Dense(self.dataset.y_train.shape[1])(output)
         y_pred = Activation('softmax', name='softmax')(output)

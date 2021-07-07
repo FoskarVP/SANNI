@@ -22,7 +22,7 @@ class Clear(BaseModel):
         self.loss = "mse"
         self.optimizer = "adam"
         self.layers = [128]
-        self.dataset = DataSet(dataset, self.bath_size, name="Clear")
+        self.dataset = DataSet(dataset, self.bath_size, name="Clear", shuffle=False)
         self.model = self.__init_networks()
         print("Инициализации сверточной сети")
 
@@ -60,6 +60,7 @@ class Clear(BaseModel):
         plt.xlabel("Epochs")
         plt.ylabel("Loss")
         plt.savefig(self.dir_dataset + '/result/Clear.png')
+        plt.clf()
         print("Провел обучение")
         self.save_model()
 
@@ -89,10 +90,10 @@ class Clear(BaseModel):
                                                 y_pred=y_predict)))
         print("rmse предсказателя- {0};".
               format(metrics.mean_squared_error(y_true=self.dataset.y_test,
-                                          y_pred=y_predict)*0.5))
+                                                y_pred=y_predict) * 0.5))
         result = {
             "mse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict),
-            "rmse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict)*0.5
+            "rmse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict) * 0.5
         }
         with open(self.dir_dataset + "/result/clear_result.txt", 'w') as outfile:
             json.dump(result, outfile)

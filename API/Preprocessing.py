@@ -85,12 +85,13 @@ def augmentation(data: pd.DataFrame, e=0.01):
     return data
 
 
-def create_dataset(size_subsequent: int, dataset: str, fraction: float):
+def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
     """
     Создает zip архив в директории датасета с размеченными датасетами
     :param size_subsequent: Размер подпоследовательности
     :param dataset: Директория датасета
     :param fraction: минимальный fraction
+    :return Возращает колличество сниппетов
     """
     p = Path(dataset + "/data_origin.txt")
     data = np.loadtxt(p)
@@ -117,7 +118,8 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float):
 
     del data_norm
     snippet_save = snippet_list.copy()
-    print("Найденно снипеттов: ", snippet_list.shape[0])
+    count_snippet = snippet_list.shape[0]
+    print("Найденно снипеттов: ", count_snippet)
     snippet_save.neighbors = snippet_save.neighbors.apply(lambda x: json.dumps(x))
     snippet_save.snippet = snippet_save.snippet.apply(lambda x: json.dumps(x.tolist()))
 
@@ -131,7 +133,7 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float):
     for i, item in snippet_list.iterrows():
         for neighbour in item.neighbors:
             if len(neighbour) == size_subsequent:
-                X_classifier.append(json.dumps(Image.subsequent_to_image(neighbour[:-1]).tolist()))
+                X_classifier.append(json.dumps(np.array(neighbour[:-1]).tolist()))
                 X_predict.append(json.dumps(np.stack([np.append(neighbour[:-1], [0]), item.snippet]).tolist()))
                 y_classifier.append(item["key"])
                 y_predict.append(neighbour[-1])
@@ -155,9 +157,11 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float):
         "classifier": False,
         "predict": False,
         "clear": False,
-        "fraction": fraction
+        "fraction": fraction,
+        "count_snippet": count_snippet
     }
 
     with open(dataset + '\current_params.json', 'w') as outfile:
         json.dump(result, outfile)
     print("Создал датасет")
+    return count_snippet

@@ -22,7 +22,7 @@ class Predictor(BaseModel):
         self.loss = "mse"
         self.optimizer = "adam"
         self.layers = [128]
-        self.dataset = DataSet(dataset, self.bath_size, name="Predict")
+        self.dataset = DataSet(dataset, self.bath_size, name="Predict",shuffle=True)
         self.model = self.__init_networks()
         print("Инициализации сверточной сети")
 

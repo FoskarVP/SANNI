@@ -28,7 +28,7 @@ class DataSet:
             if shuffle:
                 self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,
                                                                                         y,
-                                                                                        test_size=percent,
+                                                                                        test_size=0.33,
                                                                                         random_state=42)
                 self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train,
                                                                                           self.y_train,

@@ -22,7 +22,7 @@ class Clear(BaseModel):
         self.loss = "mse"
         self.optimizer = "adam"
         self.layers = [128]
-        self.dataset = DataSet(dataset, self.bath_size, name="Clear", shuffle=False)
+        self.dataset = DataSet(dataset, self.bath_size, name="Clear", shuffle=True)
         self.model = self.__init_networks()
         print("Инициализации сверточной сети")
 
@@ -59,6 +59,7 @@ class Clear(BaseModel):
         plt.plot(history.history["val_loss"], label="valid_dataset")
         plt.xlabel("Epochs")
         plt.ylabel("Loss")
+        plt.legend()
         plt.savefig(self.dir_dataset + '/result/Clear.png')
         plt.clf()
         print("Провел обучение")
@@ -77,7 +78,7 @@ class Clear(BaseModel):
 
         with open(self.dir_dataset + "/current_params.json") as f:
             current = json.load(f)
-        current["predict"] = True
+        current["clear"] = True
         with open(self.dir_dataset + '/current_params.json', 'w') as outfile:
             json.dump(current, outfile)
         print("Сохранил модель")

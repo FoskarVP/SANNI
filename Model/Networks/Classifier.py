@@ -28,7 +28,7 @@ class Classifier(BaseModel):
         self.optimizer = "adam"
         self.loss = "categorical_crossentropy"
         self.metrics = [tf.keras.metrics.Precision()]
-        self.dataset = DataSet(dataset, self.bath_size, name="Classifier", shuffle=False)
+        self.dataset = DataSet(dataset, self.bath_size, name="Classifier", shuffle=True)
 
         self.snippet_list = pd.read_csv(self.dir_dataset + "/snippet.csv",
                                         converters={"snippet": json.loads}).snippet.values
@@ -89,6 +89,7 @@ class Classifier(BaseModel):
         plt.plot(history.history["val_loss"], label="valid_dataset")
         plt.xlabel("Epochs")
         plt.ylabel("Loss")
+        plt.legend()
         plt.savefig(self.dir_dataset + '/result/Classifier.png')
         print("Провел обучение")
         self.save_model()
@@ -110,18 +111,20 @@ class Classifier(BaseModel):
                                             y_pred=y_predict)))
         print("recall классификатора - {0};".
               format(metrics.recall_score(y_true=np.argmax(self.dataset.y_test, axis=1),
-                                          y_pred=y_predict)))
+                                          y_pred=y_predict, average="weighted")))
         print("precision классификатора - {0};".
               format(metrics.precision_score(y_true=np.argmax(self.dataset.y_test, axis=1),
-                                             y_pred=y_predict)))
+                                             y_pred=y_predict, average="weighted")))
         print("f1 классификатора - {0};".
               format(metrics.f1_score(y_true=np.argmax(self.dataset.y_test, axis=1),
-                                      y_pred=y_predict)))
+                                      y_pred=y_predict, average="weighted")))
         result = {
             "accuracy": metrics.accuracy_score(y_true=np.argmax(self.dataset.y_test, axis=1), y_pred=y_predict),
-            "recall": metrics.recall_score(y_true=np.argmax(self.dataset.y_test, axis=1), y_pred=y_predict),
-            "precision": metrics.precision_score(y_true=np.argmax(self.dataset.y_test, axis=1), y_pred=y_predict),
-            "f1": metrics.f1_score(y_true=np.argmax(self.dataset.y_test, axis=1), y_pred=y_predict),
+            "recall": metrics.recall_score(y_true=np.argmax(self.dataset.y_test, axis=1), y_pred=y_predict,
+                                           average="weighted"),
+            "precision": metrics.precision_score(y_true=np.argmax(self.dataset.y_test, axis=1), y_pred=y_predict,
+                                                 average="weighted"),
+            "f1": metrics.f1_score(y_true=np.argmax(self.dataset.y_test, axis=1), y_pred=y_predict, average="weighted"),
         }
         with open(self.dir_dataset + "/result/classifier_result.txt", 'w') as outfile:
             json.dump(result, outfile)

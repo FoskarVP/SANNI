@@ -4,6 +4,7 @@ import os
 from sklearn import metrics
 from progress.bar import IncrementalBar
 import time, sys
+import matplotlib.pyplot as plt
 
 from Model.Networks.Classifier import Classifier
 from Model.Networks.Predictor import Predictor
@@ -45,10 +46,17 @@ class Center:
             os.mkdir(self.params.dir_dataset + "/result")
 
     def predict(self, data: np.ndarray):  # -> np.ndarray:
-        predict = []
         classifier = []
-        bar = IncrementalBar('General test', max=len(data))
+        y_classifier = self.classifier.predict(data)
+        arr = []
+        for i, item in enumerate(y_classifier):
+            y_classifier = self.classifier.get_snippet(item)
+            X_predict = np.stack([np.append(data[i], [0]), y_classifier])
+            X_predict = X_predict.reshape(self.params.size_subsequent, 2)
+            arr.append(X_predict)
 
+        predict = self.predictor.predict(np.array(arr))
+        """
         for j, i in enumerate(data):
             bar.next()
             y_classifier = self.classifier.predict(np.array([i]))[0]
@@ -59,8 +67,7 @@ class Center:
             y_predict = self.predictor.predict(np.array([X_predict]))
             _predict = self.clear.predict(np.array([i]))
             predict.append(y_predict[0][0])
-
-        bar.finish()
+        """
         return np.array(predict), np.array(classifier)
 
     def load_model(self, dir_: str) -> None:
@@ -126,6 +133,22 @@ class Center:
             "rmse": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
                                                y_pred=y_predict_clear) * 0.5
         }
+        plt.plot(self.clear.dataset.y_test,
+                 label="true point",
+                 linestyle=":",
+                 marker="x")
+        plt.plot(y_predict,
+                 label="snippet point",
+                 linestyle="-",
+                 marker="o")
+        plt.plot(y_predict_clear,
+                 label="frame point",
+                 linestyle="-.",
+                 marker="+")
+        plt.legend()
+        plt.savefig(self.params.dir_dataset + '/result/general_test.png')
+        plt.show()
+        plt.clf()
         with open(self.params.dir_dataset + "/result/general_result.txt", 'w') as outfile:
             json.dump(result, outfile)
 

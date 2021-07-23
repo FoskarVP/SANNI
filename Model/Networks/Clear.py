@@ -21,8 +21,12 @@ class Clear(BaseModel):
         self.epochs = 60
         self.loss = "mse"
         self.optimizer = "adam"
-        self.layers = [128]
-        self.dataset = DataSet(dataset, self.bath_size, name="Clear", shuffle=True)
+        try:
+            with open(dataset + "/networks.json", "r") as read_file:
+                self.layers = json.load(read_file)["predict"]
+        except Exception as e:
+            print(e)
+            self.layers = [128]
         self.model = self.__init_networks()
         print("Инициализации сверточной сети")
 
@@ -32,19 +36,26 @@ class Clear(BaseModel):
                             dtype='float32')
         output = input_layer
 
-        ## ведутся работы
         for i in self.layers[:-1]:
-            output = Conv2D(i[0], (i[1], i[1]), kernel_initializer='he_normal', activation='relu')(output)
-
+            output = GRU(i,
+                         return_sequences=True,
+                         kernel_initializer='he_normal',
+                         activation='relu')(output)
+            output = Dropout(0.05)(output)
         output = GRU(self.layers[-1],
                      kernel_initializer='he_normal',
                      activation='relu')(output)
-        output = Dropout(0.2)(output)
         output = Dense(1)(output)
         model = Model(inputs=input_layer, outputs=output)
         model.compile(loss=self.loss, optimizer=self.optimizer)
         model.summary()
         return model
+
+    def init_dataset(self):
+        self.dataset = DataSet(self.dir_dataset, self.bath_size, name="Clear", shuffle=True)
+
+    def del_dataset(self):
+        del self.dataset
 
     def train_model(self):
         print("Запуск обучения Предсказателя без сниппетов")

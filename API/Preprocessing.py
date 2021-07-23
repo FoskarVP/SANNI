@@ -104,27 +104,21 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
         y.append(json.dumps(data_norm[i + size_subsequent - 1]))
 
     y = np.array(y)
-
+    print("создал архив")
     zipf = zipfile.ZipFile(dataset + '/dataset.zip', 'w', zipfile.ZIP_DEFLATED)
 
     filename = 'Clear'
     pd.DataFrame({"X": X, "y": y}).to_csv(f'{filename}.csv')
     zipf.write(filename + '.csv')
     os.remove(filename + '.csv')
-    del X, y
+    del X,
+    print("Начал поиск сниппетов")
     snippet_list = search_snippet(data=data_norm,
                                   fraction=fraction,
                                   size_subsequent=size_subsequent)
 
     del data_norm
-    snippet_save = snippet_list.copy()
-    count_snippet = snippet_list.shape[0]
-    print("Найденно снипеттов: ", count_snippet)
-    snippet_save.neighbors = snippet_save.neighbors.apply(lambda x: json.dumps(x))
-    snippet_save.snippet = snippet_save.snippet.apply(lambda x: json.dumps(x.tolist()))
 
-    snippet_save.to_csv(dataset + "/snippet.csv", )
-    del snippet_save
     X_classifier = []
     X_predict = []
     y_predict = []
@@ -138,7 +132,16 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
                 y_classifier.append(item["key"])
                 y_predict.append(neighbour[-1])
         del item
+
+    count_snippet = snippet_list.shape[0]
+    print("Найденно снипеттов: ", count_snippet)
+    snippet_list.neighbors = snippet_list.neighbors.apply(lambda x: json.dumps(x))
+    snippet_list.snippet = snippet_list.snippet.apply(lambda x: json.dumps(x.tolist()))
+
+    snippet_list.to_csv(dataset + "/snippet.csv", )
+
     del snippet_list
+
     y_classifier = tf.keras.utils.to_categorical(np.array(y_classifier))
     filename = 'Classifier'
     pd.DataFrame({"X": X_classifier, "y": y_classifier.tolist()}) \
@@ -152,6 +155,7 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
     zipf.write(filename + '.csv')
     os.remove(filename + '.csv')
     zipf.close()
+
     result = {
         "size_subsequent": size_subsequent,
         "classifier": False,
@@ -163,5 +167,6 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
 
     with open(dataset + '\current_params.json', 'w') as outfile:
         json.dump(result, outfile)
+
     print("Создал датасет")
     return count_snippet

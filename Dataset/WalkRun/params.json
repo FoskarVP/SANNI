@@ -1,6 +1,6 @@
 {
   "fraction": 0.07,
   "size_subsequent": 200,
-  "percent_test": 0.3,
+  "percent_test": 0.33,
   "dataset_name": "WalkRun1_80_3800_200.txt"
 }

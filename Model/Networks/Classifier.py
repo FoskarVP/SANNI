@@ -20,15 +20,18 @@ class Classifier(BaseModel):
         super(Classifier, self).__init__(size_subsequent, dataset, load)
 
         # засунуть в абстрактный класс
-
         self.bath_size = 25
         self.pool = 2
-        self.layers = [[128, 5], [128, 5], [64, 5]]
+        try:
+            with open(dataset+"/networks.json", "r") as read_file:
+                self.layers = json.load(read_file)["classifier"]
+        except Exception:
+            self.layers = [[128, 5], [128, 5], [128, 5]]
         self.epochs = 40
         self.optimizer = "adam"
         self.loss = "categorical_crossentropy"
         self.metrics = [tf.keras.metrics.Precision()]
-        self.dataset = DataSet(dataset, self.bath_size, name="Classifier", shuffle=True)
+        self.dataset_dir = dataset
 
         self.snippet_list = pd.read_csv(self.dir_dataset + "/snippet.csv",
                                         converters={"snippet": json.loads}).snippet.values
@@ -37,19 +40,20 @@ class Classifier(BaseModel):
         print("Инициализации сверточной сети")
 
     def __init_networks(self):
-        input_layer = Input((self.dataset.X_test.shape[1], 1),
+        input_layer = Input((self.size_subsequent - 1, 1),
                             name="img_input",
                             dtype='float32')
         output = input_layer
         for i in self.layers[:-1]:
             output = Conv1D(i[0], i[1], kernel_initializer='he_normal', activation='relu')(output)
             output = AveragePooling1D(pool_size=2)(output)
+            output = Dropout(0.05)(output)
 
         output = Conv1D(self.layers[-1][0], self.layers[-1][1],
                         kernel_initializer='he_normal', activation='relu')(output)
         output = GlobalAvgPool1D()(output)
         output = Dropout(0.25)(output)
-        output = Dense(self.dataset.y_train.shape[1])(output)
+        output = Dense(self.snippet_list.shape[0])(output)
         y_pred = Activation('softmax', name='softmax')(output)
 
         model = Model(inputs=input_layer, outputs=y_pred)
@@ -60,6 +64,13 @@ class Classifier(BaseModel):
     def load_model(self):
         self.model = load_model(self.dir_dataset + "/networks/classifier.h5")
         print("Загрузка сверточной сети из файла")
+
+    def init_dataset(self):
+        self.dataset = DataSet(self.dataset_dir, self.bath_size, name="Predict", shuffle=True)
+        self.dataset = DataSet(self.dataset_dir, self.bath_size, name="Classifier", shuffle=True)
+
+    def del_dataset(self):
+        del self.dataset
 
     def save_model(self) -> None:
         if not os.path.exists(self.dir_dataset + "/networks"):

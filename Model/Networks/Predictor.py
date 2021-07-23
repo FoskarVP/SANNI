@@ -17,12 +17,17 @@ from tensorflow.keras.layers import GRU, Dropout
 class Predictor(BaseModel):
     def __init__(self, size_subsequent: int, dataset: str, load=None) -> None:
         super().__init__(size_subsequent, dataset, load)
+        self.dataset_dir = dataset
         self.bath_size = 25
         self.epochs = 60
         self.loss = "mse"
         self.optimizer = "adam"
-        self.layers = [128]
-        self.dataset = DataSet(dataset, self.bath_size, name="Predict",shuffle=True)
+        try:
+            with open(dataset+"/networks.json", "r") as read_file:
+                self.layers = json.load(read_file)["predict"]
+        except Exception as e:
+            print(e)
+            self.layers = [128]
         self.model = self.__init_networks()
         print("Инициализации сверточной сети")
 
@@ -31,20 +36,27 @@ class Predictor(BaseModel):
                             name="img_input",
                             dtype='float32')
         output = input_layer
-
-        ## ведутся работы
         for i in self.layers[:-1]:
-            output = Conv2D(i[0], (i[1], i[1]), kernel_initializer='he_normal', activation='relu')(output)
-
+            output = GRU(i,
+                         return_sequences=True,
+                         kernel_initializer='he_normal',
+                         activation='relu')(output)
+            output = Dropout(0.05)(output)
         output = GRU(self.layers[-1],
                      kernel_initializer='he_normal',
                      activation='relu')(output)
-        output = Dropout(0.2)(output)
+        output = Dropout(0.05)(output)
         output = Dense(1)(output)
         model = Model(inputs=input_layer, outputs=output)
         model.compile(loss=self.loss, optimizer=self.optimizer)
         model.summary()
         return model
+
+    def init_dataset(self):
+        self.dataset = DataSet(self.dataset_dir, self.bath_size, name="Predict", shuffle=False)
+
+    def del_dataset(self):
+        del self.dataset
 
     def train_model(self):
         print("Запуск обучения Предсказателя")

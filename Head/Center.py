@@ -17,6 +17,7 @@ from API.Image import subsequent_to_image
 
 class Center:
     def __init__(self, params: Params):
+        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
         self.params = params
         create = False
         if os.path.exists(params.dir_dataset + "/current_params.json"):
@@ -89,23 +90,31 @@ class Center:
             print("Открываю созданый датасет")
 
         if not model[0]:
+            self.classifier.init_dataset()
             self.classifier.train_model()
+            self.classifier.del_dataset()
         else:
             self.classifier.load_model()
-
         if not model[1]:
+            self.predictor.init_dataset()
             self.predictor.train_model()
+            self.predictor.del_dataset()
+
         else:
             self.predictor.load_model()
 
         if not model[2]:
+            self.clear.init_dataset()
             self.clear.train_model()
+            self.predictor.del_dataset()
+
         else:
+
             self.clear.load_model()
 
     def general_test(self):
         print("Запуск генерального тестирования")
-
+        self.clear.init_dataset()
         y_predict_clear = self.clear.predict(self.clear.dataset.X_test)
         print("mse предсказателя без сниппета - {0};".
               format(metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
@@ -156,7 +165,15 @@ class Center:
 
     def test(self):
         print("Тестирование")
+        self.classifier.init_dataset()
         self.classifier.test()
+        self.classifier.del_dataset()
+        self.predictor.init_dataset()
+        self.predictor.test()
+        self.predictor.del_dataset()
+        self.clear.init_dataset()
+        self.clear.test()
+        self.clear.del_dataset()
         self.predictor.test()
         self.clear.test()
         self.general_test()

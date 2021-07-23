@@ -1,0 +1,6 @@
+{
+  "fraction": 0.06,
+  "size_subsequent": 300,
+  "percent_test": 0.33,
+  "dataset_name": "tsHeatingComplete"
+}

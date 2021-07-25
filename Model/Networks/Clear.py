@@ -12,13 +12,14 @@ from keras.layers import Conv2D
 from keras.models import Model, Input, load_model
 from keras.layers import Dense
 from tensorflow.keras.layers import GRU, Dropout
+from keras.regularizers import l1, l2, l1_l2
 
 
 class Clear(BaseModel):
     def __init__(self, size_subsequent: int, dataset: str, load=None) -> None:
         super().__init__(size_subsequent, dataset, load)
         self.bath_size = 25
-        self.epochs = 60
+        self.epochs = 40
         self.loss = "mse"
         self.optimizer = "adam"
         try:
@@ -39,12 +40,19 @@ class Clear(BaseModel):
         for i in self.layers[:-1]:
             output = GRU(i,
                          return_sequences=True,
+                         #         kernel_regularizer=l1_l2(l1=1e-5, l2=1e-4),
+                         #        bias_regularizer=l2(1e-4),
+                         #         activity_regularizer=l2(1e-5),
                          kernel_initializer='he_normal',
                          activation='relu')(output)
             output = Dropout(0.05)(output)
         output = GRU(self.layers[-1],
+                     # kernel_regularizer=l1_l2(l1=1e-5, l2=1e-4),
+                     # bias_regularizer=l2(1e-4),
+                     # activity_regularizer=l2(1e-5),
                      kernel_initializer='he_normal',
                      activation='relu')(output)
+        output = Dropout(0.05)(output)
         output = Dense(1)(output)
         model = Model(inputs=input_layer, outputs=output)
         model.compile(loss=self.loss, optimizer=self.optimizer)
@@ -52,7 +60,7 @@ class Clear(BaseModel):
         return model
 
     def init_dataset(self):
-        self.dataset = DataSet(self.dir_dataset, self.bath_size, name="Clear", shuffle=True)
+        self.dataset = DataSet(self.dir_dataset, self.bath_size, name="Clear", shuffle=False)
 
     def del_dataset(self):
         del self.dataset

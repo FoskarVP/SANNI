@@ -33,10 +33,14 @@ def search_snippet(data: np.ndarray, fraction: float, size_subsequent: int) -> p
                  "snippet": item['snippet'],
                  "fraction": item['fraction']}
         neighbors = []
+        index=[]
         for neighbor in item['neighbors']:
             neighbors.append(data[neighbor:neighbor + size_subsequent].tolist())
+            index.append(neighbor)
         dict_["neighbors"] = neighbors
+        dict_["neighbors_index"] = index
         arr_snp.append(dict_)
+        del item
 
     df = pd.DataFrame(arr_snp, columns=arr_snp[0].keys())
     df = augmentation(df)
@@ -111,36 +115,23 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
     pd.DataFrame({"X": X, "y": y}).to_csv(f'{filename}.csv')
     zipf.write(filename + '.csv')
     os.remove(filename + '.csv')
-    del X,
+    del X
     print("Начал поиск сниппетов")
     snippet_list = search_snippet(data=data_norm,
                                   fraction=fraction,
                                   size_subsequent=size_subsequent)
-
-    del data_norm
+    count_snippet = snippet_list.shape[0]
+    print("Найденно снипеттов: ", count_snippet)
 
     X_classifier = []
-    X_predict = []
-    y_predict = []
     y_classifier = []
 
     for i, item in snippet_list.iterrows():
         for neighbour in item.neighbors:
             if len(neighbour) == size_subsequent:
                 X_classifier.append(json.dumps(np.array(neighbour[:-1]).tolist()))
-                X_predict.append(json.dumps(np.stack([np.append(neighbour[:-1], [0]), item.snippet]).tolist()))
                 y_classifier.append(item["key"])
-                y_predict.append(neighbour[-1])
-        del item
-
-    count_snippet = snippet_list.shape[0]
-    print("Найденно снипеттов: ", count_snippet)
-    snippet_list.neighbors = snippet_list.neighbors.apply(lambda x: json.dumps(x))
-    snippet_list.snippet = snippet_list.snippet.apply(lambda x: json.dumps(x.tolist()))
-
-    snippet_list.to_csv(dataset + "/snippet.csv", )
-
-    del snippet_list
+    print("Создал датасет классификатора")
 
     y_classifier = tf.keras.utils.to_categorical(np.array(y_classifier))
     filename = 'Classifier'
@@ -148,7 +139,28 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
         .to_csv(f'{filename}.csv')
     zipf.write(filename + '.csv')
     os.remove(filename + '.csv')
+    del X_classifier, y_classifier
 
+    X_predict = []
+    y_predict = []
+
+    for i in range(size_subsequent - 1, len(data) - size_subsequent - 1):
+        subsequent = data_norm[i:i + size_subsequent - 1].tolist()
+        subsequent.append(0)
+        snippet = np.zeros(size_subsequent)
+        for j, item in snippet_list.iterrows():
+            if i in item.neighbors_index:
+                snippet = item["snippet"]
+                break
+        X_predict.append(json.dumps(np.stack([np.array(subsequent), snippet]).tolist()))
+        y_predict.append(json.dumps(data_norm[i + size_subsequent - 1]))
+
+    print("Создал датасет предсказателя")
+    snippet_list.neighbors = snippet_list.neighbors.apply(lambda x: json.dumps(x))
+    snippet_list.snippet = snippet_list.snippet.apply(lambda x: json.dumps(x.tolist()))
+    snippet_list.to_csv(dataset + "/snippet.csv", )
+
+    del snippet_list
     filename = 'Predict'
     pd.DataFrame({"X": X_predict, "y": y_predict}, columns=["X", "y"]) \
         .to_csv(f'{filename}.csv')

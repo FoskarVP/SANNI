@@ -27,7 +27,7 @@ class Classifier(BaseModel):
                 self.layers = json.load(read_file)["classifier"]
         except Exception:
             self.layers = [[128, 5], [128, 5], [128, 5]]
-        self.epochs = 40
+        self.epochs = 60
         self.optimizer = "adam"
         self.loss = "categorical_crossentropy"
         self.metrics = [tf.keras.metrics.Precision()]
@@ -46,7 +46,11 @@ class Classifier(BaseModel):
         output = input_layer
         for i in self.layers[:-1]:
             output = Conv1D(i[0], i[1], kernel_initializer='he_normal', activation='relu')(output)
-            output = AveragePooling1D(pool_size=2)(output)
+            if len(i) == 3:
+                if i[2] == "a":
+                    output = AveragePooling1D(pool_size=2)(output)
+            else:
+                output = AveragePooling1D(pool_size=2)(output)
             output = Dropout(0.05)(output)
 
         output = Conv1D(self.layers[-1][0], self.layers[-1][1],

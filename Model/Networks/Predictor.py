@@ -12,6 +12,7 @@ from keras.layers import Conv2D
 from keras.models import Model, Input, load_model
 from keras.layers import Dense
 from tensorflow.keras.layers import GRU, Dropout
+from keras.regularizers import l1, l2, l1_l2
 
 
 class Predictor(BaseModel):
@@ -19,11 +20,11 @@ class Predictor(BaseModel):
         super().__init__(size_subsequent, dataset, load)
         self.dataset_dir = dataset
         self.bath_size = 25
-        self.epochs = 60
+        self.epochs = 40
         self.loss = "mse"
         self.optimizer = "adam"
         try:
-            with open(dataset+"/networks.json", "r") as read_file:
+            with open(dataset + "/networks.json", "r") as read_file:
                 self.layers = json.load(read_file)["predict"]
         except Exception as e:
             print(e)
@@ -40,10 +41,17 @@ class Predictor(BaseModel):
             output = GRU(i,
                          return_sequences=True,
                          kernel_initializer='he_normal',
+                         #          kernel_regularizer=l1_l2(l1=1e-5, l2=1e-4),
+                         #           bias_regularizer=l2(1e-4),
+                         #           activity_regularizer=l2(1e-5),
+
                          activation='relu')(output)
             output = Dropout(0.05)(output)
         output = GRU(self.layers[-1],
                      kernel_initializer='he_normal',
+                     #    kernel_regularizer=l1_l2(l1=1e-5, l2=1e-4),
+                     #    bias_regularizer=l2(1e-4),
+                     #    activity_regularizer=l2(1e-5),
                      activation='relu')(output)
         output = Dropout(0.05)(output)
         output = Dense(1)(output)

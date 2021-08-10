@@ -66,8 +66,8 @@ class Predictor(BaseModel):
     def del_dataset(self):
         del self.dataset
 
-    def train_model(self):
-        print("Запуск обучения Предсказателя")
+    def train_model(self, send_message=print):
+        send_message("Запуск обучения Предсказателя")
 
         history = self.model.fit(self.dataset.X_train.
                                  reshape(self.dataset.X_train.shape[0],
@@ -86,7 +86,9 @@ class Predictor(BaseModel):
         plt.xlabel("Epochs")
         plt.ylabel("Loss")
         plt.savefig(self.dir_dataset + '/result/Predictor.png')
-        print("Провел обучение")
+        plt.clf()
+        send_message('\nhistory dict: ' + history.history)
+        send_message("Провел обучение")
         self.save_model()
 
     def load_model(self):
@@ -107,22 +109,26 @@ class Predictor(BaseModel):
             json.dump(current, outfile)
         print("Сохранил модель")
 
-    def test(self):
-        y_predict = self.predict(self.dataset.X_test.reshape(self.dataset.X_test.shape[0],
-                                                             self.dataset.X_test.shape[2],
-                                                             self.dataset.X_test.shape[1]))
+    def test(self, send_message=print):
+            y_predict = self.predict(self.dataset.X_test.reshape(self.dataset.X_test.shape[0],
+                                                                 self.dataset.X_test.shape[2],
+                                                                 self.dataset.X_test.shape[1]))
+            """
+            print("mse предсказателя - {0};".
+                  format(metrics.mean_squared_error(y_true=self.dataset.y_test,
+                                                    y_pred=y_predict)))
+            print("rmse предсказателя- {0};".
+                  format(metrics.mean_squared_error(y_true=self.dataset.y_test,
+                                                    y_pred=y_predict) * 0.5))
+            
+            """
+            result = {
+                "mse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict),
+                "rmse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict) * 0.5
+            }
 
-        print("mse предсказателя - {0};".
-              format(metrics.mean_squared_error(y_true=self.dataset.y_test,
-                                                y_pred=y_predict)))
-        print("rmse предсказателя- {0};".
-              format(metrics.mean_squared_error(y_true=self.dataset.y_test,
-                                                y_pred=y_predict) * 0.5))
-        result = {
-            "mse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict),
-            "rmse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict) * 0.5
-        }
-        with open(self.dir_dataset + "/result/predictor_result.txt", 'w') as outfile:
-            json.dump(result, outfile)
+            send_message(str(result))
+            with open(self.dir_dataset + "/result/predictor_result.txt", 'w') as outfile:
+                json.dump(result, outfile)
 
-        print("Провел внутренние тестирование предсказателя на основе сниппетов")
+            send_message("Провел внутренние тестирование классификатора")

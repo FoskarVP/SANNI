@@ -65,8 +65,8 @@ class Clear(BaseModel):
     def del_dataset(self):
         del self.dataset
 
-    def train_model(self):
-        print("Запуск обучения Предсказателя без сниппетов")
+    def train_model(self, send_message=print):
+        send_message("Запуск обучения Предсказателя без сниппетов")
 
         history = self.model.fit(self.dataset.X_train,
                                  self.dataset.y_train,
@@ -81,7 +81,8 @@ class Clear(BaseModel):
         plt.legend()
         plt.savefig(self.dir_dataset + '/result/Clear.png')
         plt.clf()
-        print("Провел обучение")
+        send_message('\nhistory dict: ' + history.history)
+        send_message("Провел обучение")
         self.save_model()
 
     def load_model(self):
@@ -102,20 +103,27 @@ class Clear(BaseModel):
             json.dump(current, outfile)
         print("Сохранил модель")
 
-    def test(self):
-        y_predict = self.predict(self.dataset.X_test)
-
+    def test(self, send_message=print):
+        y_predict = self.predict(self.dataset.X_test.reshape(self.dataset.X_test.shape[0],
+                                                             self.dataset.X_test.shape[2],
+                                                             self.dataset.X_test.shape[1]))
+        """
         print("mse предсказателя - {0};".
               format(metrics.mean_squared_error(y_true=self.dataset.y_test,
                                                 y_pred=y_predict)))
         print("rmse предсказателя- {0};".
               format(metrics.mean_squared_error(y_true=self.dataset.y_test,
                                                 y_pred=y_predict) * 0.5))
+
+        """
+        
         result = {
             "mse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict),
             "rmse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict) * 0.5
         }
-        with open(self.dir_dataset + "/result/clear_result.txt", 'w') as outfile:
+
+        send_message(str(result))
+        with open(self.dir_dataset + "/result/predictor_result.txt", 'w') as outfile:
             json.dump(result, outfile)
 
-        print("Провел внутренние тестирование предсказателя без сниппетов")
+        send_message("Провел внутренние тестирование классификатора")

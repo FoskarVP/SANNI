@@ -14,7 +14,7 @@ import tensorflow as tf
 from API import Image
 
 
-def search_snippet(data: np.ndarray, fraction: float, size_subsequent: int) -> pd.DataFrame:
+def search_snippet(data: np.ndarray, snippet_count: int, size_subsequent: int) -> pd.DataFrame:
     """
     Поиск снипетов
     :param data: Директория временного ряда: str
@@ -24,7 +24,7 @@ def search_snippet(data: np.ndarray, fraction: float, size_subsequent: int) -> p
     """
 
     snp = snippets(data,
-                   num_snippets=int(data.shape[0] / size_subsequent * fraction),
+                   num_snippets=snippet_count,
                    snippet_size=size_subsequent)
 
     arr_snp = []
@@ -33,7 +33,7 @@ def search_snippet(data: np.ndarray, fraction: float, size_subsequent: int) -> p
                  "snippet": item['snippet'],
                  "fraction": item['fraction']}
         neighbors = []
-        index=[]
+        index = []
         for neighbor in item['neighbors']:
             neighbors.append(data[neighbor:neighbor + size_subsequent].tolist())
             index.append(neighbor)
@@ -89,7 +89,7 @@ def augmentation(data: pd.DataFrame, e=0.01):
     return data
 
 
-def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
+def create_dataset(size_subsequent: int, dataset: str, snippet_count: float) -> int:
     """
     Создает zip архив в директории датасета с размеченными датасетами
     :param size_subsequent: Размер подпоследовательности
@@ -108,6 +108,7 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
         y.append(json.dumps(data_norm[i + size_subsequent - 1]))
 
     y = np.array(y)
+
     print("создал архив")
     zipf = zipfile.ZipFile(dataset + '/dataset.zip', 'w', zipfile.ZIP_DEFLATED)
 
@@ -118,7 +119,7 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
     del X
     print("Начал поиск сниппетов")
     snippet_list = search_snippet(data=data_norm,
-                                  fraction=fraction,
+                                  snippet_count=snippet_count,
                                   size_subsequent=size_subsequent)
     count_snippet = snippet_list.shape[0]
     print("Найденно снипеттов: ", count_snippet)
@@ -173,8 +174,7 @@ def create_dataset(size_subsequent: int, dataset: str, fraction: float) -> int:
         "classifier": False,
         "predict": False,
         "clear": False,
-        "fraction": fraction,
-        "count_snippet": count_snippet
+        "snippet_count": snippet_count
     }
 
     with open(dataset + '\current_params.json', 'w') as outfile:

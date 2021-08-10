@@ -23,7 +23,7 @@ class Classifier(BaseModel):
         self.bath_size = 25
         self.pool = 2
         try:
-            with open(dataset+"/networks.json", "r") as read_file:
+            with open(dataset + "/networks.json", "r") as read_file:
                 self.layers = json.load(read_file)["classifier"]
         except Exception:
             self.layers = [[128, 5], [128, 5], [128, 5]]
@@ -92,8 +92,8 @@ class Classifier(BaseModel):
     def get_snippet(self, class_snip: int) -> np.ndarray:
         return self.snippet_list[class_snip]
 
-    def train_model(self):
-        print("Запуск обучения классификатора")
+    def train_model(self, send_message=print):
+        send_message("Запуск обучения классификатора")
         history = self.model.fit(self.dataset.X_train,
                                  self.dataset.y_train,
                                  validation_data=(self.dataset.X_valid,
@@ -106,7 +106,9 @@ class Classifier(BaseModel):
         plt.ylabel("Loss")
         plt.legend()
         plt.savefig(self.dir_dataset + '/result/Classifier.png')
-        print("Провел обучение")
+        plt.clf()
+        send_message('\nhistory dict: '+history.history)
+        send_message("Провел обучение")
         self.save_model()
 
     def predict(self, data: np.ndarray):
@@ -118,12 +120,12 @@ class Classifier(BaseModel):
         data = super(Classifier, self).predict(data)
         return np.argmax(data, axis=1)
 
-    def test(self):
+    def test(self, send_message=print):
         y_predict = self.predict(self.dataset.X_test)
-
+        """
         print("accuracy классификатора - {0};".
-              format(metrics.accuracy_score(y_true=np.argmax(self.dataset.y_test, axis=1),
-                                            y_pred=y_predict)))
+             format(metrics.accuracy_score(y_true=np.argmax(self.dataset.y_test, axis=1),
+                                           y_pred=y_predict)))
         print("recall классификатора - {0};".
               format(metrics.recall_score(y_true=np.argmax(self.dataset.y_test, axis=1),
                                           y_pred=y_predict, average="weighted")))
@@ -133,6 +135,7 @@ class Classifier(BaseModel):
         print("f1 классификатора - {0};".
               format(metrics.f1_score(y_true=np.argmax(self.dataset.y_test, axis=1),
                                       y_pred=y_predict, average="weighted")))
+        """
         result = {
             "accuracy": metrics.accuracy_score(y_true=np.argmax(self.dataset.y_test, axis=1), y_pred=y_predict),
             "recall": metrics.recall_score(y_true=np.argmax(self.dataset.y_test, axis=1), y_pred=y_predict,
@@ -141,7 +144,10 @@ class Classifier(BaseModel):
                                                  average="weighted"),
             "f1": metrics.f1_score(y_true=np.argmax(self.dataset.y_test, axis=1), y_pred=y_predict, average="weighted"),
         }
+
+        send_message(str(result))
+
         with open(self.dir_dataset + "/result/classifier_result.txt", 'w') as outfile:
             json.dump(result, outfile)
 
-        print("Провел внутренние тестирование классификатора")
+        send_message("Провел внутренние тестирование классификатора")

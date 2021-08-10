@@ -10,13 +10,19 @@ from Model.Networks.Classifier import Classifier
 from Model.Networks.Predictor import Predictor
 from Model.Networks.Clear import Clear
 from Head.Params import Params
-
+from ResultBot.Bot import ResultBot
 from API.Preprocessing import create_dataset
 from API.Image import subsequent_to_image
 
 
 class Center:
     def __init__(self, params: Params):
+
+        self.bot = ResultBot(project_name="SANNI")
+        self.bot.params["size_subsequent"] = params.size_subsequent
+        self.bot.params["snippet_count"] = params.snippet_count
+        self.bot.params["dataset_name"] = params.dataset_name
+
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
         self.params = params
         create = False
@@ -25,7 +31,7 @@ class Center:
             with open(params.dir_dataset + "/current_params.json") as f:
                 current = json.load(f)
             if current["size_subsequent"] == self.params.size_subsequent \
-                    and current["fraction"] == self.params.fraction:
+                    and current["snippet_count"] == self.params.snippet_count:
                 create = True
                 print("Открываю созданый датасет")
 
@@ -33,8 +39,9 @@ class Center:
             init_time = time.time()
             create_dataset(size_subsequent=params.size_subsequent,
                            dataset=params.dir_dataset,
-                           fraction=params.fraction)
-            print("Время инициализации датасета %s" % (time.time() - init_time))
+                           snippet_count=params.snippet_count)
+            mess = "Время создание датасета %s" % (time.time() - init_time)
+            self.message(mess)
 
         self.classifier = Classifier(size_subsequent=params.size_subsequent,
                                      dataset=params.dir_dataset)
@@ -45,6 +52,10 @@ class Center:
 
         if not os.path.exists(self.params.dir_dataset + "/result"):
             os.mkdir(self.params.dir_dataset + "/result")
+
+    def message(self, mess):
+        self.bot.send_message(mess)
+        print(mess)
 
     def predict(self, data: np.ndarray):  # -> np.ndarray:
         classifier = []
@@ -75,7 +86,8 @@ class Center:
         print("Загрузка из файлов")
 
     def train_model(self):
-        print("Обучение моделей")
+        mess = "Обучение моделей"
+        self.message(mess)
         model = [False, False, False]
         if os.path.exists(self.params.dir_dataset + "/current_params.json"):
 
@@ -87,7 +99,9 @@ class Center:
                 model[1] = True
             if current["clear"]:
                 model[2] = True
-            print("Открываю созданый датасет")
+
+            mess = "Открываю созданые датасеты"
+            self.message(mess)
 
         if not model[0]:
             self.classifier.init_dataset()
@@ -106,33 +120,38 @@ class Center:
         if not model[2]:
             self.clear.init_dataset()
             self.clear.train_model()
-            self.predictor.del_dataset()
+            self.clear.del_dataset()
 
         else:
 
             self.clear.load_model()
 
     def general_test(self):
-        print("Запуск генерального тестирования")
+        mess = "Запуск генерального тестирования"
+        self.message(mess)
+
         self.clear.init_dataset()
         y_predict_clear = self.clear.predict(self.clear.dataset.X_test)
-        print("mse предсказателя без сниппета - {0};".
-              format(metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                                y_pred=y_predict_clear)))
-        print("rmse предсказателя без сниппета- {0};".
-              format(metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                                y_pred=y_predict_clear) * 0.5))
+        mess = "mse предсказателя без сниппета - {0}\n".format(
+            metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
+                                       y_pred=y_predict_clear))
+
+        mess += "rmse предсказателя без сниппета- {0}".format(
+            metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
+                                       y_pred=y_predict_clear) * 0.5)
 
         y_predict, y_classifier = self.predict(self.clear.dataset.X_test)
+        self.message(mess)
 
-        print("mse предсказателя со сниппетом - {0};".
-              format(metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                                y_pred=y_predict)))
-        print("rmse предсказателя со сниппетом- {0};".
-              format(metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                                y_pred=y_predict) * 0.5))
+        mess = "mse предсказателя со сниппетом - {0};".format(
+            metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
+                                       y_pred=y_predict))
+        mess += "rmse предсказателя со сниппетом- {0};".format(
+            metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
+                                       y_pred=y_predict) * 0.5)
 
         result = {
+
             "mse_sn": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
                                                  y_pred=y_predict),
             "rmse_sn": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
@@ -142,6 +161,7 @@ class Center:
             "rmse": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
                                                y_pred=y_predict_clear) * 0.5
         }
+
         plt.plot(self.clear.dataset.y_test,
                  label="true point",
                  linestyle=":",
@@ -161,19 +181,16 @@ class Center:
         with open(self.params.dir_dataset + "/result/general_result.txt", 'w') as outfile:
             json.dump(result, outfile)
 
-        print("Провел генеральное тестирование")
+        self.message("Провел генеральное тестирование")
 
-    def test(self):
-        print("Тестирование")
-        self.classifier.init_dataset()
-        self.classifier.test()
-        self.classifier.del_dataset()
-        self.predictor.init_dataset()
-        self.predictor.test()
-        self.predictor.del_dataset()
-        self.clear.init_dataset()
-        self.clear.test()
-        self.clear.del_dataset()
-        self.predictor.test()
-        self.clear.test()
-        self.general_test()
+
+def test(self):
+    self.message("Тестирование")
+    self.classifier.init_dataset()
+    self.classifier.test()
+    self.classifier.del_dataset()
+    self.predictor.init_dataset()
+    self.predictor.test()
+    self.clear.init_dataset()
+    self.clear.test()
+    self.general_test()

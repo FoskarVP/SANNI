@@ -1,10 +1,12 @@
 import json
-
+import os
 
 class Params:
     def __init__(self,
                  _dir: str):
-        with open(_dir + "/params.json") as f:
+        print("Текущая деректория:", os.getcwd())
+        print(_dir + "\\params.json")
+        with open(_dir + "\\params.json") as f:
             params = json.load(f)
         self.dir_dataset = _dir
         self.snippet_count = params["snippet_count"]

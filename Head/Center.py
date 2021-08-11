@@ -2,8 +2,7 @@ import numpy as np
 import json
 import os
 from sklearn import metrics
-from progress.bar import IncrementalBar
-import time, sys
+import time
 import matplotlib.pyplot as plt
 
 from Model.Networks.Classifier import Classifier
@@ -12,7 +11,6 @@ from Model.Networks.Clear import Clear
 from Head.Params import Params
 from ResultBot.Bot import ResultBot
 from API.Preprocessing import create_dataset
-from API.Image import subsequent_to_image
 
 
 class Center:
@@ -22,7 +20,7 @@ class Center:
         self.bot.params["size_subsequent"] = params.size_subsequent
         self.bot.params["snippet_count"] = params.snippet_count
         self.bot.params["dataset_name"] = params.dataset_name
-
+        self.bot.send_message("Запуск обучения")
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
         self.params = params
         create = False
@@ -194,3 +192,21 @@ def test(self):
     self.clear.init_dataset()
     self.clear.test()
     self.general_test()
+
+
+def start(dir_):
+    start_time = time.time()
+
+    params = Params(dir_)
+    init_time = time.time()
+    center = Center(params)
+    print("Время инициализации модели %s" % (time.time() - init_time))
+    train_time = time.time()
+
+    center.train_model()
+    print("Время обучения модели %s" % (time.time() - train_time))
+    test_time = time.time()
+    center.test()
+    print("Время тестирования модели %s" % (time.time() - test_time))
+
+    print("Общие время работы %s" % (time.time() - start_time))

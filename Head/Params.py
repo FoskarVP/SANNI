@@ -1,6 +1,7 @@
 import json
 import os
 
+
 class Params:
     def __init__(self,
                  _dir: str):
@@ -13,3 +14,5 @@ class Params:
         self.percent_test = params["percent_test"]
         self.size_subsequent = params["size_subsequent"]
         self.dataset_name = params["dataset_name"]
+        self.shuffle = params["shuffle"]
+        self.random = params["random"]

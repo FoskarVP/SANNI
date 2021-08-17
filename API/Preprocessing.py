@@ -18,7 +18,7 @@ def search_snippet(data: np.ndarray, snippet_count: int, size_subsequent: int) -
     """
     Поиск снипетов
     :param data: Директория временного ряда: str
-    :param fraction: float
+    :param snippet_count: int
     :param size_subsequent: Размер подпоследовательности - int
     :return: Массив снипеетов - np.ndarray
     """
@@ -89,12 +89,12 @@ def augmentation(data: pd.DataFrame, e=0.01):
     return data
 
 
-def create_dataset(size_subsequent: int, dataset: str, snippet_count: float) -> int:
+def create_dataset(size_subsequent: int, dataset: str, snippet_count: int) -> int:
     """
     Создает zip архив в директории датасета с размеченными датасетами
     :param size_subsequent: Размер подпоследовательности
     :param dataset: Директория датасета
-    :param fraction: минимальный fraction
+    :param snippet_count: минимальный fraction
     :return Возращает колличество сниппетов
     """
     p = Path(dataset + "/data_origin.txt")
@@ -112,7 +112,7 @@ def create_dataset(size_subsequent: int, dataset: str, snippet_count: float) -> 
     print("создал архив")
     zipf = zipfile.ZipFile(dataset + '/dataset.zip', 'w', zipfile.ZIP_DEFLATED)
 
-    filename = 'Clear'
+    filename = 'clear'
     pd.DataFrame({"X": X, "y": y}).to_csv(f'{filename}.csv')
     zipf.write(filename + '.csv')
     os.remove(filename + '.csv')
@@ -135,7 +135,7 @@ def create_dataset(size_subsequent: int, dataset: str, snippet_count: float) -> 
     print("Создал датасет классификатора")
 
     y_classifier = tf.keras.utils.to_categorical(np.array(y_classifier))
-    filename = 'Classifier'
+    filename = 'classifier'
     pd.DataFrame({"X": X_classifier, "y": y_classifier.tolist()}) \
         .to_csv(f'{filename}.csv')
     zipf.write(filename + '.csv')
@@ -162,7 +162,7 @@ def create_dataset(size_subsequent: int, dataset: str, snippet_count: float) -> 
     snippet_list.to_csv(dataset + "/snippet.csv", )
 
     del snippet_list
-    filename = 'Predict'
+    filename = 'predictor'
     pd.DataFrame({"X": X_predict, "y": y_predict}, columns=["X", "y"]) \
         .to_csv(f'{filename}.csv')
     zipf.write(filename + '.csv')

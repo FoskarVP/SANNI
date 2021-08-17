@@ -71,7 +71,7 @@ class ResultBot:
     def send_message(self, message=""):
         str_message = ""
         if self.project_name != "":
-            str_message += "Проект: {0}\n".format(self.project_name)
+            str_message += "Проект: #{0}\n".format(self.project_name)
         if self.type_ != "":
             str_message += "Тип исследование: {0}\n".format(self.type_)
         if len(self.params.values()):
@@ -117,11 +117,12 @@ class ResultBot:
             self.insert_params.append(message.chat.id)
             insert_params = self.insert_params
             self.insert_params = []
-            try:
+            func(insert_params)
+            """try:
                 func(insert_params)
-            except BaseException as e:
+            except ValueError as e:
                 print(e)
-                self.send_message(str(e))
+                self.send_message(str(e))"""
 
     def request_page(self, message):
         keys = list(self.func[self.choice][1])

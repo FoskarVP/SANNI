@@ -1,129 +1,13 @@
-from Model.Networks.Base import BaseModel
-from Model.Dataset import DataSet
-
-import os
-import json
-
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn import metrics
-
-from keras.layers import Conv2D
-from keras.models import Model, Input, load_model
-from keras.layers import Dense
-from tensorflow.keras.layers import GRU, Dropout
-from keras.regularizers import l1, l2, l1_l2
+from Model.Networks.Predictor import Predictor
 
 
-class Clear(BaseModel):
+class Clear(Predictor):
     def __init__(self, size_subsequent: int, dataset: str, load=None) -> None:
         super().__init__(size_subsequent, dataset, load)
-        self.bath_size = 25
-        self.epochs = 40
-        self.loss = "mse"
-        self.optimizer = "adam"
-        try:
-            with open(dataset + "/networks.json", "r") as read_file:
-                self.layers = json.load(read_file)["predict"]
-        except Exception as e:
-            print(e)
-            self.layers = [128]
-        self.model = self.__init_networks()
-        print("Инициализации сверточной сети")
+        self.name = "clear"
+        self.input = (self.size_subsequent - 1, 1)
 
-    def __init_networks(self):
-        input_layer = Input((self.size_subsequent - 1, 1),
-                            name="img_input",
-                            dtype='float32')
-        output = input_layer
 
-        for i in self.layers[:-1]:
-            output = GRU(i,
-                         return_sequences=True,
-                         #         kernel_regularizer=l1_l2(l1=1e-5, l2=1e-4),
-                         #        bias_regularizer=l2(1e-4),
-                         #         activity_regularizer=l2(1e-5),
-                         kernel_initializer='he_normal',
-                         activation='relu')(output)
-            output = Dropout(0.05)(output)
-        output = GRU(self.layers[-1],
-                     # kernel_regularizer=l1_l2(l1=1e-5, l2=1e-4),
-                     # bias_regularizer=l2(1e-4),
-                     # activity_regularizer=l2(1e-5),
-                     kernel_initializer='he_normal',
-                     activation='relu')(output)
-        output = Dropout(0.05)(output)
-        output = Dense(1)(output)
-        model = Model(inputs=input_layer, outputs=output)
-        model.compile(loss=self.loss, optimizer=self.optimizer)
-        model.summary()
-        return model
 
-    def init_dataset(self):
-        self.dataset = DataSet(self.dir_dataset, self.bath_size, name="Clear", shuffle=False)
 
-    def del_dataset(self):
-        del self.dataset
 
-    def train_model(self, send_message=print):
-        send_message("Запуск обучения Предсказателя без сниппетов")
-
-        history = self.model.fit(self.dataset.X_train,
-                                 self.dataset.y_train,
-                                 validation_data=(self.dataset.X_valid,
-                                                  self.dataset.y_valid),
-                                 batch_size=self.bath_size, epochs=self.epochs)
-
-        plt.plot(history.history["loss"], label="train_dataset")
-        plt.plot(history.history["val_loss"], label="valid_dataset")
-        plt.xlabel("Epochs")
-        plt.ylabel("Loss")
-        plt.legend()
-        plt.savefig(self.dir_dataset + '/result/Clear.png')
-        plt.clf()
-        send_message('\nhistory dict: ' + history.history)
-        send_message("Провел обучение")
-        self.save_model()
-
-    def load_model(self):
-        self.model = load_model(self.dir_dataset + "/networks/clear.h5")
-        print("Загрузка предсказателя сети из файла")
-
-    def save_model(self) -> None:
-
-        if not os.path.exists(self.dir_dataset + "/networks"):
-            os.mkdir(self.dir_dataset + "/networks")
-
-        self.model.save(self.dir_dataset + "/networks/clear.h5")
-
-        with open(self.dir_dataset + "/current_params.json") as f:
-            current = json.load(f)
-        current["clear"] = True
-        with open(self.dir_dataset + '/current_params.json', 'w') as outfile:
-            json.dump(current, outfile)
-        print("Сохранил модель")
-
-    def test(self, send_message=print):
-        y_predict = self.predict(self.dataset.X_test.reshape(self.dataset.X_test.shape[0],
-                                                             self.dataset.X_test.shape[2],
-                                                             self.dataset.X_test.shape[1]))
-        """
-        print("mse предсказателя - {0};".
-              format(metrics.mean_squared_error(y_true=self.dataset.y_test,
-                                                y_pred=y_predict)))
-        print("rmse предсказателя- {0};".
-              format(metrics.mean_squared_error(y_true=self.dataset.y_test,
-                                                y_pred=y_predict) * 0.5))
-
-        """
-        
-        result = {
-            "mse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict),
-            "rmse": metrics.mean_squared_error(y_true=self.dataset.y_test, y_pred=y_predict) * 0.5
-        }
-
-        send_message(str(result))
-        with open(self.dir_dataset + "/result/predictor_result.txt", 'w') as outfile:
-            json.dump(result, outfile)
-
-        send_message("Провел внутренние тестирование классификатора")

@@ -8,28 +8,38 @@ import matplotlib.pyplot as plt
 from Model.Networks.Classifier import Classifier
 from Model.Networks.Predictor import Predictor
 from Model.Networks.Clear import Clear
+from Model.Other.Mean import Mean, Median, Mode
+
 from Head.Params import Params
+from Model.Other.Regression import K_Regress
+from Model.Other.imputeTS import inputeTS
 from ResultBot.Bot import ResultBot
 from API.Preprocessing import create_dataset
 
 
 class Center:
-    def __init__(self, params: Params):
-
-        self.bot = ResultBot(project_name="SANNI")
+    def __init__(self, params: Params, bot=None):
+        if bot is None:
+            self.bot = ResultBot(project_name="SANNI")
+        else:
+            self.bot = bot
         self.bot.params["size_subsequent"] = params.size_subsequent
         self.bot.params["snippet_count"] = params.snippet_count
         self.bot.params["dataset_name"] = params.dataset_name
         self.bot.send_message("Запуск обучения")
+
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
         self.params = params
         create = False
+        clear_create = False
         if os.path.exists(params.dir_dataset + "/current_params.json"):
 
             with open(params.dir_dataset + "/current_params.json") as f:
                 current = json.load(f)
             if current["size_subsequent"] == self.params.size_subsequent \
                     and current["snippet_count"] == self.params.snippet_count:
+                if current["size_subsequent"] == self.params.size_subsequent:
+                    clear_create = True
                 create = True
                 print("Открываю созданый датасет")
 
@@ -39,33 +49,51 @@ class Center:
                            dataset=params.dir_dataset,
                            snippet_count=params.snippet_count)
             mess = "Время создание датасета %s" % (time.time() - init_time)
+            if clear_create:
+                with open(params.dir_dataset + "/current_params.json") as f:
+                    current = json.load(f)
+                    current["clear"] = True
+                    with open(params.dir_dataset + '/current_params.json', 'w') as outfile:
+                        json.dump(current, outfile)
             self.message(mess)
 
-        self.classifier = Classifier(size_subsequent=params.size_subsequent,
-                                     dataset=params.dir_dataset)
-        self.predictor = Predictor(size_subsequent=params.size_subsequent,
-                                   dataset=params.dir_dataset)
-        self.clear = Clear(size_subsequent=params.size_subsequent,
-                           dataset=params.dir_dataset)
+        self.models = {"classifier": Classifier(size_subsequent=params.size_subsequent,
+                                                dataset=params.dir_dataset),
+                       "predictor": Predictor(size_subsequent=params.size_subsequent,
+                                              dataset=params.dir_dataset),
+                       "clear": Clear(size_subsequent=params.size_subsequent,
+                                      dataset=params.dir_dataset),
+                       "Mean": Mean(size_subsequent=params.size_subsequent,
+                                    dataset=params.dir_dataset),
+                       "Median": Median(size_subsequent=params.size_subsequent,
+                                        dataset=params.dir_dataset),
+                       "Mode": Mode(size_subsequent=params.size_subsequent,
+                                    dataset=params.dir_dataset),
+                       "K_Regress": K_Regress(size_subsequent=params.size_subsequent,
+                                              dataset=params.dir_dataset),
+                       "inputeTS": inputeTS(size_subsequent=params.size_subsequent,
+                                            dataset=params.dir_dataset)
+                       }
 
         if not os.path.exists(self.params.dir_dataset + "/result"):
             os.mkdir(self.params.dir_dataset + "/result")
 
     def message(self, mess):
+        mess = str(mess)
         self.bot.send_message(mess)
         print(mess)
 
     def predict(self, data: np.ndarray):  # -> np.ndarray:
         classifier = []
-        y_classifier = self.classifier.predict(data)
+        y_classifier = self.models["classifier"].predict(data)
         arr = []
         for i, item in enumerate(y_classifier):
-            y_classifier = self.classifier.get_snippet(item)
+            y_classifier = self.models["classifier"].get_snippet(item)
             X_predict = np.stack([np.append(data[i], [0]), y_classifier])
             X_predict = X_predict.reshape(self.params.size_subsequent, 2)
             arr.append(X_predict)
 
-        predict = self.predictor.predict(np.array(arr))
+        predict = self.models["predictor"].predict(np.array(arr))
         """
         for j, i in enumerate(data):
             bar.next()
@@ -86,81 +114,53 @@ class Center:
     def train_model(self):
         mess = "Обучение моделей"
         self.message(mess)
-        model = [False, False, False]
         if os.path.exists(self.params.dir_dataset + "/current_params.json"):
 
             with open(self.params.dir_dataset + "/current_params.json") as f:
                 current = json.load(f)
-            if current["classifier"]:
-                model[0] = True
-            if current["predict"]:
-                model[1] = True
-            if current["clear"]:
-                model[2] = True
 
-            mess = "Открываю созданые датасеты"
-            self.message(mess)
-
-        if not model[0]:
-            self.classifier.init_dataset()
-            self.classifier.train_model()
-            self.classifier.del_dataset()
-        else:
-            self.classifier.load_model()
-        if not model[1]:
-            self.predictor.init_dataset()
-            self.predictor.train_model()
-            self.predictor.del_dataset()
-
-        else:
-            self.predictor.load_model()
-
-        if not model[2]:
-            self.clear.init_dataset()
-            self.clear.train_model()
-            self.clear.del_dataset()
-
-        else:
-
-            self.clear.load_model()
+            for key, item in self.models.items():
+                item.init_networks()
+                if key not in current or not current[key]:
+                    item.init_dataset()
+                    result = item.train_model(self.message)
+                    if result is not None:
+                        fig, message = result
+                        self.message(message)
+                        self.bot.send_plot(fig)
+                    item.del_dataset()
+                else:
+                    item.load_model()
 
     def general_test(self):
         mess = "Запуск генерального тестирования"
         self.message(mess)
 
-        self.clear.init_dataset()
-        y_predict_clear = self.clear.predict(self.clear.dataset.X_test)
-        mess = "mse предсказателя без сниппета - {0}\n".format(
-            metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                       y_pred=y_predict_clear))
+        keys = list(self.models)
+        keys.remove("classifier")
+        keys.remove("predictor")
+        self.models["clear"].init_dataset()
+        test_dataset = self.models["clear"].dataset
+        result = {}
+        fig, ax = plt.subplots(figsize=(5, 3))
+        for i in keys:
+            y_predict_clear = self.models[i].predict(test_dataset.X_test)
+            result["mse {0}".format(i)] = metrics.mean_squared_error(y_true=test_dataset.y_test,
+                                                                     y_pred=y_predict_clear)
 
-        mess += "rmse предсказателя без сниппета- {0}".format(
-            metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                       y_pred=y_predict_clear) * 0.5)
+            result["rmse {0}".format(i)] = metrics.mean_squared_error(y_true=test_dataset.y_test,
+                                                                      y_pred=y_predict_clear) * 0.5
 
-        y_predict, y_classifier = self.predict(self.clear.dataset.X_test)
-        self.message(mess)
+            ax.plot(y_predict_clear,
+                    label=i)
+        y_predict, y_classifier = self.predict(test_dataset.X_test)
 
-        mess = "mse предсказателя со сниппетом - {0};".format(
-            metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                       y_pred=y_predict))
-        mess += "rmse предсказателя со сниппетом- {0};".format(
-            metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                       y_pred=y_predict) * 0.5)
+        result["mse Predictor"] = metrics.mean_squared_error(test_dataset.y_test,
+                                                             y_pred=y_predict)
+        result["rmse Predictor"] = metrics.mean_squared_error(test_dataset.y_test,
+                                                              y_pred=y_predict) * 0.5
 
-        result = {
-
-            "mse_sn": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                                 y_pred=y_predict),
-            "rmse_sn": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                                  y_pred=y_predict) * 0.5,
-            "mse": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                              y_pred=y_predict_clear),
-            "rmse": metrics.mean_squared_error(y_true=self.clear.dataset.y_test,
-                                               y_pred=y_predict_clear) * 0.5
-        }
-
-        plt.plot(self.clear.dataset.y_test,
+        plt.plot(test_dataset.y_test,
                  label="true point",
                  linestyle=":",
                  marker="x")
@@ -168,38 +168,30 @@ class Center:
                  label="snippet point",
                  linestyle="-",
                  marker="o")
-        plt.plot(y_predict_clear,
-                 label="frame point",
-                 linestyle="-.",
-                 marker="+")
-        plt.legend()
-        plt.savefig(self.params.dir_dataset + '/result/general_test.png')
-        plt.show()
-        plt.clf()
-        with open(self.params.dir_dataset + "/result/general_result.txt", 'w') as outfile:
+        ax.legend()
+        fig.savefig(self.params.dir_dataset + '/result/general_test.png')
+        self.message(result)
+        self.bot.send_plot(fig)
+        with open(self.params.dir_dataset + "/result/general_result.json", 'w') as outfile:
             json.dump(result, outfile)
-
+        plt.clf()
         self.message("Провел генеральное тестирование")
 
-
-def test(self):
-    self.message("Тестирование")
-    self.classifier.init_dataset()
-    self.classifier.test()
-    self.classifier.del_dataset()
-    self.predictor.init_dataset()
-    self.predictor.test()
-    self.clear.init_dataset()
-    self.clear.test()
-    self.general_test()
+    def test(self):
+        self.message("Тестирование")
+        for key, item in self.models.items():
+            item.init_dataset()
+            item.test(send_message=self.bot.send_message)
+            item.del_dataset()
+        self.general_test()
 
 
-def start(dir_):
+def start(dir_, bot=None):
     start_time = time.time()
 
     params = Params(dir_)
     init_time = time.time()
-    center = Center(params)
+    center = Center(params, bot)
     print("Время инициализации модели %s" % (time.time() - init_time))
     train_time = time.time()
 

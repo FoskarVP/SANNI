@@ -16,7 +16,7 @@ def start_train(data):
         json.dump(params, outfile)
     bot.bot.send_message(chat_id, "Запускаю обучение со следующими парамаетрами" +
                          str(params))
-    start(dataset)
+    start(dataset,bot)
 
 
 bot = ResultBot(project_name="sanni")

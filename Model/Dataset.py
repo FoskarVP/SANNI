@@ -4,10 +4,12 @@ import zipfile
 from sklearn.model_selection import train_test_split
 import json
 
+from Head.Params import Params
+
 
 class DataSet:
 
-    def __init__(self, dir_=None, bath_size=None, name=None, percent=None, shuffle=True) -> None:
+    def __init__(self, dir_=None, bath_size=None, name=None) -> None:
         """
         Инициализация датасета
         :param dir_: Директория датасета
@@ -17,23 +19,29 @@ class DataSet:
         if dir_ is not None:
             self.bath_size = bath_size
             self.dir_ = dir_
+            self.params = Params(dir_)
             read = zipfile.ZipFile(dir_ + "/dataset.zip", 'r')
-            ## костыль
-
             df = pd.read_csv(read.open(name + ".csv"), converters={"X": json.loads,
                                                                    "y": json.loads})
 
             X = np.stack(df.X.values)
             y = np.stack(df.y.values)
-            if shuffle:
-                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,
-                                                                                        y,
-                                                                                        test_size=0.33,
-                                                                                        random_state=42)
-                self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train,
-                                                                                          self.y_train,
-                                                                                          test_size=0.33,
-                                                                                          random_state=42)
+
+            if self.params.shuffle:
+                index = np.array(range(len(X)))
+                self.i_train, self.i_test = train_test_split(index,
+                                                             test_size=self.params.percent_test,
+                                                             random_state=self.params.random)
+                self.i_train, self.i_valid, = train_test_split(self.i_train,
+                                                               test_size=self.params.percent_test,
+                                                               random_state=self.params.random)
+
+                self.X_train = X[self.i_train]
+                self.X_valid = X[self.i_valid]
+                self.X_test = X[self.i_test]
+                self.y_train = y[self.i_train]
+                self.y_valid = y[self.i_valid]
+                self.y_test = y[self.i_test]
             else:
                 self.X_train = X[:int(X.shape[0] * 0.6)]
                 self.X_valid = X[int(X.shape[0] * 0.6):int(X.shape[0] * 0.75)]

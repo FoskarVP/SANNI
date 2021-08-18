@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from Model.Dataset import DataSet
 import numpy as np
-from keras.models import Sequential, load_model
+from tensorflow.keras.models import Sequential, load_model
 import matplotlib.pyplot as plt
 import json
 import os

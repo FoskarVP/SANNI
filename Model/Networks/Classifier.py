@@ -23,6 +23,7 @@ class Classifier(BaseModel):
         self.bath_size = 25
         self.name = "classifier"
         self.pool = 2
+        self.dataset_shuffle = True
         try:
             with open(dataset + "/networks.json", "r") as read_file:
                 self.layers = json.load(read_file)["classifier"]

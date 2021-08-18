@@ -27,6 +27,7 @@ class BaseModel:
         self.dataset = DataSet()
         self.size_subsequent = size_subsequent
         self.model = Sequential()
+        self.dataset_shuffle = False
         pass
 
     def init_networks(self):

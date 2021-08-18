@@ -9,7 +9,7 @@ from Head.Params import Params
 
 class DataSet:
 
-    def __init__(self, dir_=None, bath_size=None, name=None) -> None:
+    def __init__(self, dir_=None, bath_size=None, name=None, shuffle=False) -> None:
         """
         Инициализация датасета
         :param dir_: Директория датасета
@@ -35,7 +35,7 @@ class DataSet:
                                                            test_size=self.params.percent_test,
                                                            random_state=self.params.random)
 
-            if self.params.shuffle:
+            if self.params.shuffle or shuffle:
 
                 self.X_train = X[self.i_train]
                 self.X_valid = X[self.i_valid]

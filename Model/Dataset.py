@@ -27,14 +27,15 @@ class DataSet:
             X = np.stack(df.X.values)
             y = np.stack(df.y.values)
 
+            index = np.array(range(len(X)))
+            self.i_train, self.i_test = train_test_split(index,
+                                                         test_size=self.params.percent_test,
+                                                         random_state=self.params.random)
+            self.i_train, self.i_valid, = train_test_split(self.i_train,
+                                                           test_size=self.params.percent_test,
+                                                           random_state=self.params.random)
+
             if self.params.shuffle:
-                index = np.array(range(len(X)))
-                self.i_train, self.i_test = train_test_split(index,
-                                                             test_size=self.params.percent_test,
-                                                             random_state=self.params.random)
-                self.i_train, self.i_valid, = train_test_split(self.i_train,
-                                                               test_size=self.params.percent_test,
-                                                               random_state=self.params.random)
 
                 self.X_train = X[self.i_train]
                 self.X_valid = X[self.i_valid]

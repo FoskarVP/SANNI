@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+
+from Head.const import CURRENT_PARAMS_DIR
 from Model.Dataset import DataSet
 import numpy as np
 from tensorflow.keras.models import Sequential, load_model
@@ -73,10 +75,10 @@ class BaseModel:
 
         self.model.save(self.dir_dataset + "/networks/{0}.h5".format(self.name))
 
-        with open(self.dir_dataset + "/current_params.json") as f:
+        with open(self.dir_dataset + CURRENT_PARAMS_DIR) as f:
             current = json.load(f)
         current[self.name] = True
-        with open(self.dir_dataset + '/current_params.json', 'w') as outfile:
+        with open(self.dir_dataset + CURRENT_PARAMS_DIR, 'w') as outfile:
             json.dump(current, outfile)
         print("Сохранил модель")
         pass

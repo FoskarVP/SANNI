@@ -6,7 +6,7 @@ import time
 import matplotlib.pyplot as plt
 
 from Model.Networks.Classifier import Classifier
-from Model.Networks.Predictor import Predictor
+from Model.Networks.Predictor import Predictor, Predictor_label
 from Model.Networks.Clear import Clear
 from Model.Other.Mean import Mean, Median, Mode
 
@@ -15,6 +15,8 @@ from Model.Other.Regression import K_Regress
 from Model.Other.imputeTS import inputeTS
 from ResultBot.Bot import ResultBot
 from API.Preprocessing import create_dataset
+
+from Head.const import CURRENT_PARAMS_DIR
 
 
 class Center:
@@ -32,9 +34,9 @@ class Center:
         self.params = params
         create = False
         clear_create = False
-        if os.path.exists(params.dir_dataset + "/current_params.json"):
+        if os.path.exists(params.dir_dataset + CURRENT_PARAMS_DIR):
 
-            with open(params.dir_dataset + "/current_params.json") as f:
+            with open(params.dir_dataset + CURRENT_PARAMS_DIR) as f:
                 current = json.load(f)
             if current["size_subsequent"] == self.params.size_subsequent \
                     and current["snippet_count"] == self.params.snippet_count:
@@ -50,10 +52,10 @@ class Center:
                            snippet_count=params.snippet_count)
             mess = "Время создание датасета %s" % (time.time() - init_time)
             if clear_create:
-                with open(params.dir_dataset + "/current_params.json") as f:
+                with open(params.dir_dataset + CURRENT_PARAMS_DIR) as f:
                     current = json.load(f)
                     current["clear"] = True
-                    with open(params.dir_dataset + '/current_params.json', 'w') as outfile:
+                    with open(params.dir_dataset + CURRENT_PARAMS_DIR, 'w') as outfile:
                         json.dump(current, outfile)
             self.message(mess)
 
@@ -114,9 +116,9 @@ class Center:
     def train_model(self):
         mess = "Обучение моделей"
         self.message(mess)
-        if os.path.exists(self.params.dir_dataset + "/current_params.json"):
+        if os.path.exists(self.params.dir_dataset + CURRENT_PARAMS_DIR):
 
-            with open(self.params.dir_dataset + "/current_params.json") as f:
+            with open(self.params.dir_dataset + CURRENT_PARAMS_DIR) as f:
                 current = json.load(f)
 
             for key, item in self.models.items():

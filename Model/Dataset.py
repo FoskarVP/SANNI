@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import zipfile
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import json
 
@@ -20,9 +20,10 @@ class DataSet:
             self.bath_size = bath_size
             self.dir_ = dir_
             self.params = Params(dir_)
-            read = zipfile.ZipFile(dir_ + "/dataset.zip", 'r')
-            df = pd.read_csv(read.open(name + ".csv"), converters={"X": json.loads,
-                                                                   "y": json.loads})
+            df = pd.read_csv("{0}/dataset/{1}.csv.gz".format(dir_, name),
+                             converters={"X": json.loads,
+                                         "y": json.loads},
+                             compression='gzip')
 
             X = np.stack(df.X.values)
             y = np.stack(df.y.values)
@@ -34,15 +35,16 @@ class DataSet:
             self.i_train, self.i_valid, = train_test_split(self.i_train,
                                                            test_size=self.params.percent_test,
                                                            random_state=self.params.random)
-
             if self.params.shuffle or shuffle:
-
-                self.X_train = X[self.i_train]
-                self.X_valid = X[self.i_valid]
-                self.X_test = X[self.i_test]
-                self.y_train = y[self.i_train]
-                self.y_valid = y[self.i_valid]
-                self.y_test = y[self.i_test]
+                print("перетусовал")
+                self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,
+                                                                                        y,
+                                                                                        test_size=0.33,
+                                                                                        random_state=self.params.random)
+                self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train,
+                                                                                          self.y_train,
+                                                                                          test_size=0.33,
+                                                                                          random_state=self.params.random)
             else:
                 self.X_train = X[:int(X.shape[0] * 0.6)]
                 self.X_valid = X[int(X.shape[0] * 0.6):int(X.shape[0] * 0.75)]

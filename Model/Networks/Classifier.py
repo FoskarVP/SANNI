@@ -34,7 +34,7 @@ class Classifier(BaseModel):
         self.loss = "categorical_crossentropy"
         self.metrics = [tf.keras.metrics.Precision()]
 
-        self.snippet_list = pd.read_csv(self.dir_dataset + "/snippet.csv",
+        self.snippet_list = pd.read_csv(self.dir_dataset + "/dataset/snippet.csv",
                                         converters={"snippet": json.loads}).snippet.values
 
     def init_networks(self):

@@ -97,25 +97,25 @@ def create_dataset(size_subsequent: int, dataset: str, snippet_count: int) -> in
     :param snippet_count: минимальный fraction
     :return Возращает колличество сниппетов
     """
+    if not os.path.isdir("{0}/dataset".format(dataset)):
+        os.mkdir("{0}/dataset".format(dataset))
     p = Path(dataset + "/data_origin.txt")
     data = np.loadtxt(p)
     data_norm = normalize(data)
+    dataset = "{0}/dataset".format(dataset)
     X = []
     y = []
 
-    for i in range(size_subsequent - 1, len(data) - size_subsequent - 1):
+    for i in range(0, len(data) - size_subsequent - 1):
         X.append(json.dumps(data_norm[i:i + size_subsequent - 1].tolist()))
         y.append(json.dumps(data_norm[i + size_subsequent - 1]))
 
     y = np.array(y)
 
     print("создал архив")
-    zipf = zipfile.ZipFile(dataset + '/dataset.zip', 'w', zipfile.ZIP_DEFLATED)
 
     filename = 'clear'
-    pd.DataFrame({"X": X, "y": y}).to_csv(f'{filename}.csv')
-    zipf.write(filename + '.csv')
-    os.remove(filename + '.csv')
+    pd.DataFrame({"X": X, "y": y}).to_csv(f'{dataset}/{filename}.csv.gz', compression='gzip')
     del X
     print("Начал поиск сниппетов")
     snippet_list = search_snippet(data=data_norm,
@@ -137,23 +137,39 @@ def create_dataset(size_subsequent: int, dataset: str, snippet_count: int) -> in
     y_classifier = tf.keras.utils.to_categorical(np.array(y_classifier))
     filename = 'classifier'
     pd.DataFrame({"X": X_classifier, "y": y_classifier.tolist()}) \
-        .to_csv(f'{filename}.csv')
-    zipf.write(filename + '.csv')
-    os.remove(filename + '.csv')
+        .to_csv(f'{dataset}/{filename}.csv.gz', compression='gzip')
     del X_classifier, y_classifier
+
+    X_predict = []
+    y_predict = []
+
+    for i in range(0, len(data) - size_subsequent - 1):
+        subsequent = data_norm[i:i + size_subsequent - 1].tolist()
+        subsequent.append(-1)
+        snippet = np.zeros(size_subsequent)
+        for j, item in snippet_list.iterrows():
+            if i in item.neighbors_index:
+                snippet = item["snippet"]
+                break
+        X_predict.append(json.dumps(np.array([np.array(subsequent), snippet]).tolist()))
+        y_predict.append(json.dumps(data_norm[i + size_subsequent - 1]))
+
+    filename = 'predictor'
+    pd.DataFrame({"X": X_predict, "y": y_predict}, columns=["X", "y"]) \
+        .to_csv(f'{dataset}/{filename}.csv.gz', compression='gzip')
 
     X_predict = []
     y_predict = []
 
     for i in range(size_subsequent - 1, len(data) - size_subsequent - 1):
         subsequent = data_norm[i:i + size_subsequent - 1].tolist()
-        subsequent.append(0)
-        snippet = np.zeros(size_subsequent)
+        number = 1
         for j, item in snippet_list.iterrows():
             if i in item.neighbors_index:
-                snippet = item["snippet"]
+                number = i
                 break
-        X_predict.append(json.dumps(np.stack([np.array(subsequent), snippet]).tolist()))
+        X_predict.append(json.dumps(np.stack([np.array(subsequent),
+                                              np.full(size_subsequent - 1, number)]).tolist()))
         y_predict.append(json.dumps(data_norm[i + size_subsequent - 1]))
 
     print("Создал датасет предсказателя")
@@ -162,22 +178,20 @@ def create_dataset(size_subsequent: int, dataset: str, snippet_count: int) -> in
     snippet_list.to_csv(dataset + "/snippet.csv", )
 
     del snippet_list
-    filename = 'predictor'
+    filename = 'predictor_label'
     pd.DataFrame({"X": X_predict, "y": y_predict}, columns=["X", "y"]) \
-        .to_csv(f'{filename}.csv')
-    zipf.write(filename + '.csv')
-    os.remove(filename + '.csv')
-    zipf.close()
+        .to_csv(f'{dataset}/{filename}.csv.gz', compression='gzip')
 
     result = {
         "size_subsequent": size_subsequent,
         "classifier": False,
-        "predict": False,
+        "predictor": False,
+        "predictor_label": False,
         "clear": False,
         "snippet_count": snippet_count
     }
 
-    with open(dataset + '\current_params.json', 'w') as outfile:
+    with open('{0}\\current_params.json'.format(dataset), 'w') as outfile:
         json.dump(result, outfile)
 
     print("Создал датасет")

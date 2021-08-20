@@ -142,17 +142,11 @@ def create_dataset(size_subsequent: int, dataset: str, snippet_count: int) -> in
 
     X_predict = []
     y_predict = []
-
-    for i in range(0, len(data) - size_subsequent - 1):
-        subsequent = data_norm[i:i + size_subsequent - 1].tolist()
-        subsequent.append(-1)
-        snippet = np.zeros(size_subsequent)
-        for j, item in snippet_list.iterrows():
-            if i in item.neighbors_index:
-                snippet = item["snippet"]
-                break
-        X_predict.append(json.dumps(np.array([np.array(subsequent), snippet]).tolist()))
-        y_predict.append(json.dumps(data_norm[i + size_subsequent - 1]))
+    for i, item in snippet_list.iterrows():
+        for neighbour in item.neighbors:
+            if len(neighbour) == size_subsequent:
+                X_predict.append(json.dumps(np.stack([np.append(neighbour[:-1], [0]), item.snippet]).tolist()))
+                y_predict.append(neighbour[-1])
 
     filename = 'predictor'
     pd.DataFrame({"X": X_predict, "y": y_predict}, columns=["X", "y"]) \
@@ -171,6 +165,7 @@ def create_dataset(size_subsequent: int, dataset: str, snippet_count: int) -> in
         X_predict.append(json.dumps(np.stack([np.array(subsequent),
                                               np.full(size_subsequent - 1, number)]).tolist()))
         y_predict.append(json.dumps(data_norm[i + size_subsequent - 1]))
+
 
     print("Создал датасет предсказателя")
     snippet_list.neighbors = snippet_list.neighbors.apply(lambda x: json.dumps(x))

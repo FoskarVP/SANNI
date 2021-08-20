@@ -1,10 +1,10 @@
 from Model.Networks.Base import BaseModel
 import json
 import tensorflow.keras as ks
-from tensorflow.keras import Input
-from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import GRU, Dropout
+from keras import Input, optimizers
+from keras.models import Model, load_model
+from keras.layers import Dense
+from keras.layers import GRU, Dropout
 from keras.regularizers import l1, l2, l1_l2
 
 
@@ -12,10 +12,10 @@ class Predictor(BaseModel):
     def __init__(self, size_subsequent: int, dataset: str, load=None) -> None:
         super().__init__(size_subsequent, dataset, load)
         self.bath_size = 25
-        self.epochs = 40
+        self.epochs = 100
         self.name = "predictor"
         self.loss = "mse"
-        self.optimizer = ks.optimizers.Adam(learning_rate=0.0005)
+        self.optimizer = optimizers.Adam(learning_rate=0.0005)
         self.input = (self.size_subsequent, 2)
         try:
             with open(dataset + "/networks.json", "r") as read_file:
@@ -23,7 +23,7 @@ class Predictor(BaseModel):
         except Exception as e:
             print(e)
             print(123)
-            self.layers = [64]
+            self.layers = [128]
 
     def init_networks(self):
         input_layer = Input(self.input,

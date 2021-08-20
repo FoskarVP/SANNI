@@ -39,12 +39,14 @@ class DataSet:
                 print("перетусовал")
                 self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X,
                                                                                         y,
-                                                                                        test_size=0.33,
-                                                                                        random_state=self.params.random)
+                                                                                        test_size=self.params.percent_test,
+                                                                                        #random_state=self.params.random
+                                                                                        )
                 self.X_train, self.X_valid, self.y_train, self.y_valid = train_test_split(self.X_train,
                                                                                           self.y_train,
-                                                                                          test_size=0.33,
-                                                                                          random_state=self.params.random)
+                                                                                          test_size=self.params.percent_test,
+                                                                                          #random_state=self.params.random
+                                                                                          )
             else:
                 self.X_train = X[:int(X.shape[0] * 0.6)]
                 self.X_valid = X[int(X.shape[0] * 0.6):int(X.shape[0] * 0.75)]

@@ -29,7 +29,7 @@ class Classifier(BaseModel):
                 self.layers = json.load(read_file)["classifier"]
         except BaseException:
             self.layers = [[128, 5], [128, 5], [128, 5]]
-        self.epochs = 60
+        self.epochs = 3
         self.optimizer = "adam"
         self.loss = "categorical_crossentropy"
         self.metrics = [tf.keras.metrics.Precision()]

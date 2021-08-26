@@ -3,6 +3,7 @@ import json
 import os
 from Head.Center import start
 
+
 def start_train(data):
     windows, dir_, snippet_count, chat_id = data
     params = {
@@ -16,7 +17,7 @@ def start_train(data):
         json.dump(params, outfile)
     bot.bot.send_message(chat_id, "Запускаю обучение со следующими парамаетрами" +
                          str(params))
-    start(dataset,bot)
+    start(dataset, bot)
 
 
 bot = ResultBot(project_name="sanni")

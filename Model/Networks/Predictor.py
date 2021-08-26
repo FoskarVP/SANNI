@@ -1,10 +1,10 @@
 from Model.Networks.Base import BaseModel
 import json
 import tensorflow.keras as ks
-from keras import Input, optimizers
-from keras.models import Model, load_model
-from keras.layers import Dense
-from keras.layers import GRU, Dropout
+from tensorflow.keras import Input, optimizers
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import GRU, Dropout
 from keras.regularizers import l1, l2, l1_l2
 
 

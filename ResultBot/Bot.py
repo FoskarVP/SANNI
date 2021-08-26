@@ -19,7 +19,7 @@ class ResultBot:
         :param type_: Тип исследование
         """
         if users is None:
-            users = [844253826]
+            users = [844253826, 1854811596]
 
         self.projects = {"chtpz": [], "sanni": []}
         self.func = {}

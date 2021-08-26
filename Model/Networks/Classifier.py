@@ -1,3 +1,5 @@
+from tensorflow.python.keras.layers import GRU
+
 from Model.Networks.Base import BaseModel
 from Model.Dataset import DataSet
 
@@ -9,7 +11,7 @@ from sklearn import metrics
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from keras.layers import Conv2D, Conv1D, Activation
+from keras.layers import Conv2D, Conv1D, Activation, Reshape
 import tensorflow as tf
 from keras.models import Model, Input, load_model
 from keras.layers import Dropout, Dense, GlobalAveragePooling2D, AveragePooling2D, AveragePooling1D, GlobalAvgPool1D
@@ -29,7 +31,7 @@ class Classifier(BaseModel):
                 self.layers = json.load(read_file)["classifier"]
         except BaseException:
             self.layers = [[128, 5], [128, 5], [128, 5]]
-        self.epochs = 3
+        self.epochs = 40
         self.optimizer = "adam"
         self.loss = "categorical_crossentropy"
         self.metrics = [tf.keras.metrics.Precision()]
@@ -53,8 +55,14 @@ class Classifier(BaseModel):
 
         output = Conv1D(self.layers[-1][0], self.layers[-1][1],
                         kernel_initializer='he_normal', activation='relu')(output)
-        output = GlobalAvgPool1D()(output)
-        output = Dropout(0.25)(output)
+        output = AveragePooling1D()(output)
+        output = Reshape((-1, 128))(output)
+        output = GRU(128,
+                     kernel_initializer='he_normal',
+                     #    kernel_regularizer=l1_l2(l1=1e-5, l2=1e-4),
+                     #    bias_regularizer=l2(1e-4),
+                     #    activity_regularizer=l2(1e-5),
+                     activation='relu')(output)
         output = Dense(self.snippet_list.shape[0])(output)
         y_pred = Activation('softmax', name='softmax')(output)
 

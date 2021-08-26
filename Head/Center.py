@@ -145,6 +145,7 @@ class Center:
         test_dataset = self.models["clear"].dataset
         result = {}
         fig, ax = plt.subplots(figsize=(5, 3))
+        clear = 0
         for i in keys:
             y_predict_clear = self.models[i].predict(test_dataset.X_test)
             result["mse {0}".format(i)] = metrics.mean_squared_error(y_true=test_dataset.y_test,
@@ -155,6 +156,9 @@ class Center:
 
             ax.plot(y_predict_clear,
                     label=i)
+            if i == "clear":
+                clear = metrics.mean_squared_error(y_true=test_dataset.y_test,
+                                                   y_pred=y_predict_clear) * 0.5
         y_predict, y_classifier = self.predict(test_dataset.X_test)
 
         result["mse Predictor"] = metrics.mean_squared_error(test_dataset.y_test,
@@ -172,12 +176,15 @@ class Center:
                  marker="o")
         ax.legend()
         fig.savefig(self.params.dir_dataset + '/result/general_test.png')
-        self.message(result)
-        self.bot.send_plot(fig)
+        #self.message(result)
+        #self.bot.send_plot(fig)
         with open(self.params.dir_dataset + "/result/general_result.json", 'w') as outfile:
             json.dump(result, outfile)
         plt.clf()
+
         self.message("Провел генеральное тестирование")
+        max_ = max((clear, result["rmse Predictor"]))
+        self.message(str(-((result["rmse Predictor"] - clear) / max_)*100)+" %")
 
     def test(self):
         self.message("Тестирование")
